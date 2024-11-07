@@ -405,6 +405,27 @@ extension OneDriveServiceProvider: CloudServiceResponseProcessing {
         }
         return false
     }
+    
+    func getSpaceInformation(completion: @escaping (Result<CloudSpaceInformation, Error>) -> Void) {
+        let url = apiURL.appendingPathComponent("me/drive")
+        get(url: url) { response in
+            switch response.result {
+            case let .success(result):
+                if let json = result.json as? [String: Any],
+                   let quota = json["quota"] as? [String: Any],
+                   let total = quota["total"] as? Int64,
+                   let free = quota["remaining"] as? Int64
+                {
+                    let info = CloudSpaceInformation(totalSpace: total, availableSpace: free, json: json)
+                    completion(.success(info))
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+                }
+            case let .failure(error):
+                completion(.failure(error))
+            }
+        }
+    }
 }
 
 

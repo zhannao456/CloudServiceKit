@@ -178,6 +178,24 @@ public class AliyunDriveServiceProvider: CloudServiceProvider {
         }
     }
     
+    func trashItem(fileId: String, driveId: String) async throws {
+        let url = apiURL.appendingPathComponent("/adrive/v1.0/openFile/recyclebin/trash")
+        var json: [String: Any] = [:]
+        json["drive_id"] = driveId
+        json["file_id"] = fileId
+
+        return try await withCheckedThrowingContinuation { continuation in
+            post(url: url, json: json) { result in
+                switch result.result {
+                case .success:
+                    continuation.resume(returning: ())
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
     public func getDriveInfo(completion: @escaping (Result<AliyunDriveInfo, Error>) -> Void) {
         let url = apiURL.appendingPathComponent("/adrive/v1.0/user/getDriveInfo")
         post(url: url) { response in

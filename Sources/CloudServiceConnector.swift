@@ -283,3 +283,19 @@ public class PCloudConnector: CloudServiceConnector {
         completion(.failure(CloudServiceError.unsupported))
     }
 }
+
+public class Premiumize: CloudServiceConnector {
+    
+    public override var authorizeUrl: String {
+        return "https://www.premiumize.me/authorize"
+    }
+    
+    public override var accessTokenUrl: String {
+        return "https://www.premiumize.me/token"
+    }
+    
+    public override func renewToken(with refreshToken: String, completion: @escaping (Result<OAuthSwift.TokenSuccess, Error>) -> Void) {
+        // pCloud OAuth does not respond with a refresh token, so renewToken is unsupported.
+        completion(.failure(CloudServiceError.unsupported))
+    }
+}

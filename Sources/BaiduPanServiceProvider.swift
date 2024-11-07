@@ -611,6 +611,71 @@ extension BaiduPanServiceProvider {
             }
         }
     }
+    
+    func getMediaItems(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+
+        var items: [CloudItem] = []
+
+        func loadList(cursor: Int?, hasMore: Bool = false) {
+            let url = apiURL.appendingPathComponent("xpan/multimedia")
+            var params: [String: Any] = [:]
+            params["method"] = "listall"
+            params["path"] = directory.path
+            params["web"] = 1
+            params["recursion"] = 0
+            params["start"] = 0
+            params["limit"] = 1000
+            params["access_token"] = credential?.password ?? ""
+            if hasMore {
+                params["start"] = cursor
+            }
+
+            get(url: url, params: params) { response in
+                switch response.result {
+                case let .success(result):
+                    if let json = result.json as? [String: Any], let list = json["list"] as? [[String: Any]] {
+                        let files = list.compactMap { BaiduPanServiceProvider.cloudItemFromJSON($0) }
+                        items.append(contentsOf: files)
+                        if let hasMore = json["has_more"] as? Int, hasMore == 1 {
+                            let cursor = json["cursor"] as? Int
+                            loadList(cursor: cursor, hasMore: true)
+                        } else {
+                            completion(.success(items))
+                        }
+                    } else {
+                        completion(.failure(CloudServiceError.responseDecodeError(result)))
+                    }
+                case let .failure(error):
+                    completion(.failure(error))
+                }
+            }
+        }
+
+        loadList(cursor: 0, hasMore: false)
+    }
+    
+    func getSpaceInformation(completion: @escaping (Result<CloudSpaceInformation, Error>) -> Void) {
+        var params: [String: Any] = [:]
+        params["checkfree"] = 0
+        params["checkexpire"] = 0
+        params["access_token"] = credential?.password ?? ""
+        get(url: "https://pan.baidu.com/api/quota", params: params) { response in
+            switch response.result {
+            case let .success(result):
+                if let json = result.json as? [String: Any],
+                   let total = json["total"] as? Int64,
+                   let used = json["used"] as? Int64
+                {
+                    let info = CloudSpaceInformation(totalSpace: total, availableSpace: total - used, json: json)
+                    completion(.success(info))
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+                }
+            case let .failure(error):
+                completion(.failure(error))
+            }
+        }
+    }
 }
 
 extension BaiduPanServiceProvider {

@@ -74,6 +74,32 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
         }
     }
     
+    func getSpaceInformation(completion: @escaping (Result<CloudSpaceInformation, Error>) -> Void) {
+        let url = apiURL.appendingPathComponent("about")
+        var params: [String: Any] = [:]
+        params["fields"] = "storageQuota"
+        get(url: url, params: params) { response in
+            switch response.result {
+            case let .success(result):
+                if let json = result.json as? [String: Any],
+                   let storageQuota = json["storageQuota"] as? [String: Any],
+                   let totalString = storageQuota["limit"] as? String,
+                   let usageString = storageQuota["usageInDrive"] as? String,
+                   let total = Int64(totalString),
+                   let usage = Int64(usageString)
+                {
+                    let info = CloudSpaceInformation(totalSpace: total, availableSpace: total - usage, json: json)
+                    completion(.success(info))
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+                }
+            case let .failure(error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    
     /// Load the contents at directory.
     /// - Parameters:
     ///   - directory: The target directory to load.
