@@ -1,9 +1,9 @@
 //
-//  HMAC.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 1/28/15.
-//  Copyright (c) 2015 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -12,7 +12,7 @@ open class HMAC {
 
     let key: [UInt8] = []
 
-    class internal func sha1(key: Data, message: Data) -> Data? {
+    class func sha1(key: Data, message: Data) -> Data? {
         let blockSize = 64
         var key = key.bytes
         let message = message.bytes
@@ -28,7 +28,7 @@ open class HMAC {
             ipad[idx] = key[idx] ^ ipad[idx]
         }
 
-        var opad = [UInt8](repeating: 0x5c, count: blockSize)
+        var opad = [UInt8](repeating: 0x5C, count: blockSize)
         for idx in key.indices {
             opad[idx] = key[idx] ^ opad[idx]
         }
@@ -42,7 +42,6 @@ open class HMAC {
         }
         return hashedData
     }
-
 }
 
 extension HMAC: OAuthSwiftSignatureDelegate {

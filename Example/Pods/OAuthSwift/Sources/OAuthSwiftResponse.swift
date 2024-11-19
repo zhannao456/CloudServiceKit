@@ -1,9 +1,9 @@
 //
-//  OAuthSwiftResponse.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 04/11/16.
-//  Copyright © 2016 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -23,28 +23,30 @@ public class OAuthSwiftResponse: NSObject { // not a struct for objc
         self.response = response
         self.request = request
     }
-
 }
 
 /// Extends this object to convert data into your business objects
-extension OAuthSwiftResponse {
+public extension OAuthSwiftResponse {
 
-    public func dataString(encoding: String.Encoding = OAuthSwiftDataEncoding) -> String? {
-        return String(data: self.data, encoding: encoding)
+    func dataString(encoding: String.Encoding = OAuthSwiftDataEncoding) -> String? {
+        String(data: self.data, encoding: encoding)
     }
 
     /// `data` converted to string using data encoding
-    public var string: String? {
-        return dataString()
+    var string: String? {
+        dataString()
     }
 
     /// Convert to json object using JSONSerialization
-    public func jsonObject(options opt: JSONSerialization.ReadingOptions = []) throws -> Any {
-        return try JSONSerialization.jsonObject(with: self.data, options: opt)
+    func jsonObject(options opt: JSONSerialization.ReadingOptions = []) throws -> Any {
+        try JSONSerialization.jsonObject(with: self.data, options: opt)
     }
 
     /// Convert to object using PropertyListSerialization
-    public func propertyList(options opt: PropertyListSerialization.ReadOptions = [], format: UnsafeMutablePointer<PropertyListSerialization.PropertyListFormat>? = nil) throws -> Any {
-        return try PropertyListSerialization.propertyList(from: self.data, options: opt, format: format)
+    func propertyList(
+        options opt: PropertyListSerialization.ReadOptions = [],
+        format: UnsafeMutablePointer<PropertyListSerialization.PropertyListFormat>? = nil
+    ) throws -> Any {
+        try PropertyListSerialization.propertyList(from: self.data, options: opt, format: format)
     }
 }

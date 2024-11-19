@@ -1,9 +1,9 @@
 //
-//  Utils.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 1/28/15.
-//  Copyright (c) 2015 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -19,7 +19,7 @@ public func generateState(withLength len: Int) -> String {
     let length = UInt32(letters.count)
 
     var randomString = ""
-    for _ in 0..<len {
+    for _ in 0 ..< len {
         let rand = arc4random_uniform(length)
         let idx = letters.index(letters.startIndex, offsetBy: Int(rand))
         let letter = letters[idx]
@@ -32,7 +32,7 @@ public func generateState(withLength len: Int) -> String {
 public func generateCodeVerifier() -> String? {
     var buffer = [UInt8](repeating: 0, count: 32)
     _ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
-   let codeVerifier = Data(buffer).base64EncodedString()
+    let codeVerifier = Data(buffer).base64EncodedString()
         .replacingOccurrences(of: "+", with: "-")
         .replacingOccurrences(of: "/", with: "_")
         .replacingOccurrences(of: "=", with: "")

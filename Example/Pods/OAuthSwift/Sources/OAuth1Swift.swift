@@ -1,9 +1,9 @@
 //
-//  OAuth1Swift.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 6/22/14.
-//  Copyright (c) 2014 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -36,7 +36,14 @@ open class OAuth1Swift: OAuthSwift {
     var accessTokenUrl: String
 
     // MARK: init
-    public init(consumerKey: String, consumerSecret: String, requestTokenUrl: URLConvertible, authorizeUrl: URLConvertible, accessTokenUrl: URLConvertible) {
+
+    public init(
+        consumerKey: String,
+        consumerSecret: String,
+        requestTokenUrl: URLConvertible,
+        authorizeUrl: URLConvertible,
+        accessTokenUrl: URLConvertible
+    ) {
         self.consumerKey = consumerKey
         self.consumerSecret = consumerSecret
         self.requestTokenUrl = requestTokenUrl.string
@@ -46,44 +53,56 @@ open class OAuth1Swift: OAuthSwift {
         self.client.credential.version = .oauth1
     }
 
-    public convenience override init(consumerKey: String, consumerSecret: String) {
+    override public convenience init(consumerKey: String, consumerSecret: String) {
         self.init(consumerKey: consumerKey, consumerSecret: consumerSecret, requestTokenUrl: "", authorizeUrl: "", accessTokenUrl: "")
     }
 
     public convenience init?(parameters: ConfigParameters) {
         guard let consumerKey = parameters["consumerKey"], let consumerSecret = parameters["consumerSecret"],
-            let requestTokenUrl = parameters["requestTokenUrl"], let authorizeUrl = parameters["authorizeUrl"], let accessTokenUrl = parameters["accessTokenUrl"] else {
-                return nil
+              let requestTokenUrl = parameters["requestTokenUrl"], let authorizeUrl = parameters["authorizeUrl"],
+              let accessTokenUrl = parameters["accessTokenUrl"]
+        else {
+            return nil
         }
-        self.init(consumerKey: consumerKey, consumerSecret: consumerSecret,
-                  requestTokenUrl: requestTokenUrl,
-                  authorizeUrl: authorizeUrl,
-                  accessTokenUrl: accessTokenUrl)
+        self.init(
+            consumerKey: consumerKey,
+            consumerSecret: consumerSecret,
+            requestTokenUrl: requestTokenUrl,
+            authorizeUrl: authorizeUrl,
+            accessTokenUrl: accessTokenUrl
+        )
     }
 
     open var parameters: ConfigParameters {
-        return [
+        [
             "consumerKey": consumerKey,
             "consumerSecret": consumerSecret,
             "requestTokenUrl": requestTokenUrl,
             "authorizeUrl": authorizeUrl,
-            "accessTokenUrl": accessTokenUrl
+            "accessTokenUrl": accessTokenUrl,
         ]
     }
 
     // MARK: functions
+
     // 0. Start
     @discardableResult
-    open func authorize(withCallbackURL url: URLConvertible, headers: OAuthSwift.Headers? = nil, completionHandler completion: @escaping TokenCompletionHandler) -> OAuthSwiftRequestHandle? {
+    open func authorize(
+        withCallbackURL url: URLConvertible,
+        headers: OAuthSwift.Headers? = nil,
+        completionHandler completion: @escaping TokenCompletionHandler
+    ) -> OAuthSwiftRequestHandle? {
         guard let callbackURL = url.url else {
             completion(.failure(.encodingError(urlString: url.string)))
             return nil
         }
         let completionHandler: TokenCompletionHandler = { [unowned self] result in
             switch result {
-            case .success(let (credential, _, _)):
+            case let .success((credential, _, _)):
                 self.observeCallback { [weak self] url in
-                    guard let this = self else { OAuthSwift.retainError(completion); return }
+                    guard let this = self else { OAuthSwift.retainError(completion)
+                        return
+                    }
                     var responseParameters = [String: String]()
                     if let query = url.query {
                         responseParameters += query.parametersFromQueryString
@@ -101,7 +120,11 @@ open class OAuth1Swift: OAuthSwift {
                             this.client.credential.oauthVerifier = oauth_verifier.safeStringByRemovingPercentEncoding
                         } else {
                             if !this.allowMissingOAuthVerifier {
-                                completion(.failure(.configurationError(message: "Missing oauth_verifier. Maybe use allowMissingOAuthVerifier=true")))
+                                completion(
+                                    .failure(
+                                        .configurationError(message: "Missing oauth_verifier. Maybe use allowMissingOAuthVerifier=true")
+                                    )
+                                )
                                 return
                             }
                         }
@@ -127,9 +150,9 @@ open class OAuth1Swift: OAuthSwift {
                         completion(.failure(.encodingError(urlString: urlString)))
                     }
                 } else {
-                    completion(.failure(.encodingError(urlString: credential.oauthToken))) // TODO specific error
+                    completion(.failure(.encodingError(urlString: credential.oauthToken))) // TODO: specific error
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
@@ -146,37 +169,47 @@ open class OAuth1Swift: OAuthSwift {
     }
 
     // 1. Request token
-    func postOAuthRequestToken(callbackURL: URL, headers: OAuthSwift.Headers? = nil, completionHandler completion: @escaping TokenCompletionHandler) {
+    func postOAuthRequestToken(
+        callbackURL: URL,
+        headers: OAuthSwift.Headers? = nil,
+        completionHandler completion: @escaping TokenCompletionHandler
+    ) {
         var parameters = [String: Any]()
         parameters["oauth_callback"] = callbackURL.absoluteString
 
         let completionHandler: OAuthSwiftHTTPRequest.CompletionHandler = { [weak self] result in
-            guard let this = self else { OAuthSwift.retainError(completion); return }
+            guard let this = self else { OAuthSwift.retainError(completion)
+                return
+            }
 
             switch result {
-            case .success(let response):
+            case let .success(response):
                 let parameters = response.string?.parametersFromQueryString ?? [:]
                 if let oauthToken = parameters["oauth_token"] {
                     this.client.credential.oauthToken = oauthToken.safeStringByRemovingPercentEncoding
                 }
-                if let oauthTokenSecret=parameters["oauth_token_secret"] {
+                if let oauthTokenSecret = parameters["oauth_token_secret"] {
                     this.client.credential.oauthTokenSecret = oauthTokenSecret.safeStringByRemovingPercentEncoding
                 }
                 completion(.success((this.client.credential, response, parameters)))
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
 
         if let handle = self.client.post(
             self.requestTokenUrl, parameters: parameters, headers: headers,
-            completionHandler: completionHandler) {
+            completionHandler: completionHandler
+        ) {
             self.putHandle(handle, withKey: UUID().uuidString)
         }
     }
 
     // 3. Get Access token
-    func postOAuthAccessTokenWithRequestToken(headers: OAuthSwift.Headers? = nil, completionHandler completion: @escaping TokenCompletionHandler) {
+    func postOAuthAccessTokenWithRequestToken(
+        headers: OAuthSwift.Headers? = nil,
+        completionHandler completion: @escaping TokenCompletionHandler
+    ) {
         var parameters = [String: Any]()
         parameters["oauth_token"] = self.client.credential.oauthToken
         if !self.allowMissingOAuthVerifier {
@@ -184,10 +217,12 @@ open class OAuth1Swift: OAuthSwift {
         }
 
         let completionHandler: OAuthSwiftHTTPRequest.CompletionHandler = { [weak self] result in
-            guard let this = self else { OAuthSwift.retainError(completion); return }
+            guard let this = self else { OAuthSwift.retainError(completion)
+                return
+            }
 
             switch result {
-            case .success(let response):
+            case let .success(response):
                 let parameters = response.string?.parametersFromQueryString ?? [:]
                 if let oauthToken = parameters["oauth_token"] {
                     this.client.credential.oauthToken = oauthToken.safeStringByRemovingPercentEncoding
@@ -197,15 +232,15 @@ open class OAuth1Swift: OAuthSwift {
                 }
                 completion(.success((this.client.credential, response, parameters)))
 
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
         if let handle = self.client.post(
             self.accessTokenUrl, parameters: parameters, headers: headers,
-            completionHandler: completionHandler) {
+            completionHandler: completionHandler
+        ) {
             self.putHandle(handle, withKey: UUID().uuidString)
         }
     }
-
 }

@@ -1,9 +1,9 @@
 //
-//  Collection+OAuthSwift.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 02/10/16.
-//  Copyright © 2016 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -23,7 +23,7 @@ extension Collection where Self.Iterator.Element == UInt8, Self.Index == Int {
             var val: UInt32 = 0
             val |= self.count > 3 ? UInt32(self[idx.advanced(by: 3)]) << 24 : 0
             val |= self.count > 2 ? UInt32(self[idx.advanced(by: 2)]) << 16 : 0
-            val |= self.count > 1 ? UInt32(self[idx.advanced(by: 1)]) << 8  : 0
+            val |= self.count > 1 ? UInt32(self[idx.advanced(by: 1)]) << 8 : 0
             // swiftlint:disable:next empty_count
             val |= self.count > 0 ? UInt32(self[idx]) : 0
             result.append(val)

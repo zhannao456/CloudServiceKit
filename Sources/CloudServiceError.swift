@@ -1,8 +1,9 @@
 //
-//  CloudServiceError.swift
-//  CloudServiceKit
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by alexiscn on 2021/9/14.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -17,12 +18,12 @@ public enum CloudServiceError: LocalizedError {
     case serviceError(Int, String?)
     /// The upload file url not exist.
     case uploadFileNotExist
-    
+
     public var errorDescription: String? {
         switch self {
         case .unsupported: return "Unsupported"
-        case .responseDecodeError(_): return "Response Decode Error"
-        case .serviceError(_, let message): return message ?? "Unknown"
+        case .responseDecodeError: return "Response Decode Error"
+        case let .serviceError(_, message): return message ?? "Unknown"
         case .uploadFileNotExist: return "Upload file not found"
         }
     }

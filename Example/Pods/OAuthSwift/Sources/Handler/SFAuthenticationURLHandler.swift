@@ -1,9 +1,9 @@
 //
-//  SFAuthenticationURLHandler.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 01/11/2019.
-//  Copyright © 2019 Dongri Jin, Marchand Eric. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -24,7 +24,7 @@ open class SFAuthenticationURLHandler: OAuthSwiftURLHandlerType {
     }
 
     public func handle(_ url: URL) {
-      OAuthSwift.log?.trace("SFAuthenticationURLHandler: init session with url: \(url.absoluteString)")
+        OAuthSwift.log?.trace("SFAuthenticationURLHandler: init session with url: \(url.absoluteString)")
         webAuthSession = SFAuthenticationSession(
             url: url,
             callbackURLScheme: callbackUrlScheme,
@@ -33,7 +33,8 @@ open class SFAuthenticationURLHandler: OAuthSwiftURLHandlerType {
                     let msg = error.localizedDescription.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
                     let errorDomain = (error as NSError).domain
                     let errorCode = (error as NSError).code
-                    let urlString = "\(self.callbackUrlScheme)?error=\(msg ?? "UNKNOWN")&error_domain=\(errorDomain)&error_code=\(errorCode)"
+                    let urlString =
+                        "\(self.callbackUrlScheme)?error=\(msg ?? "UNKNOWN")&error_domain=\(errorDomain)&error_code=\(errorCode)"
                     let url = URL(string: urlString)!
                     #if !OAUTH_APP_EXTENSIONS
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -43,7 +44,8 @@ open class SFAuthenticationURLHandler: OAuthSwiftURLHandlerType {
                     UIApplication.shared.open(successURL, options: [:], completionHandler: nil)
                     #endif
                 }
-        })
+            }
+        )
 
         _ = webAuthSession.start()
     }
@@ -52,7 +54,7 @@ open class SFAuthenticationURLHandler: OAuthSwiftURLHandlerType {
 @available(iOS, introduced: 11.0, deprecated: 12.0)
 extension SFAuthenticationURLHandler {
     static func isCancelledError(domain: String, code: Int) -> Bool {
-        return domain == SFAuthenticationErrorDomain &&
+        domain == SFAuthenticationErrorDomain &&
             code == SFAuthenticationError.canceledLogin.rawValue
     }
 }

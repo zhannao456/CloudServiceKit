@@ -1,41 +1,41 @@
 //
-//  URLConvertible.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Arman Arutyunov on 07/02/2019.
-//  Copyright © 2019 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
 /// Either a String representing URL or a URL itself
 public protocol URLConvertible {
-	var string: String { get }
-	var url: URL? { get }
+    var string: String { get }
+    var url: URL? { get }
 }
 
 extension String: URLConvertible {
-	public var string: String {
-		return self
-	}
+    public var string: String {
+        self
+    }
 
-	public var url: URL? {
-		return URL(string: self)
-	}
+    public var url: URL? {
+        URL(string: self)
+    }
 }
 
 extension URL: URLConvertible {
-	public var string: String {
-		return absoluteString
-	}
+    public var string: String {
+        absoluteString
+    }
 
-	public var url: URL? {
-		return self
-	}
+    public var url: URL? {
+        self
+    }
 }
 
-extension URLConvertible {
-    public var encodedURL: URL {
-        return URL(string: self.string.urlEncoded)!
+public extension URLConvertible {
+    var encodedURL: URL {
+        URL(string: self.string.urlEncoded)!
     }
 }

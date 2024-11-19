@@ -1,8 +1,9 @@
 //
-//  PCloudServiceProvider.swift
-//  CloudServiceKit
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by alexiscn on 2021/8/16.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -12,30 +13,30 @@ import OAuthSwift
  https://docs.pcloud.com/methods/
  */
 public class PCloudServiceProvider: CloudServiceProvider {
-    
+
     public var delegate: CloudServiceProviderDelegate?
-    
+
     /// The name of service provider.
-    public var name: String { return "pCloud" }
-    
+    public var name: String { "pCloud" }
+
     /// The root folder of pCloud. You can use this property to list root items.
-    public var rootItem: CloudItem { return CloudItem(id: "0", name: name, path: "/") }
-    
+    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "/") }
+
     public var credential: URLCredential?
-    
+
     /// The API URL of pCloud service.
     public var apiURL = URL(string: "https://api.pcloud.com")!
-    
+
     /// This handler do nothing since pCloud does not return a refresh token.
     public var refreshAccessTokenHandler: CloudRefreshAccessTokenHandler?
-    
+
     /// Since pCloud API does not provide a search API, we list all files and filter by keyword
     private var allItemsForSearch: [CloudItem] = []
-    
-    required public init(credential: URLCredential?) {
+
+    public required init(credential: URLCredential?) {
         self.credential = credential
     }
-    
+
     /// Get information of file. Folder not supported
     /// Document can be found here: https://docs.pcloud.com/methods/file/stat.html
     /// - Parameters:
@@ -49,20 +50,21 @@ public class PCloudServiceProvider: CloudServiceProvider {
             let data = ["fileid": item.id]
             post(url: url, data: data) { response in
                 switch response.result {
-                case .success(let result):
+                case let .success(result):
                     if let object = result.json as? [String: Any],
-                       let item = PCloudServiceProvider.cloudItemFromJSON(object) {
+                       let item = PCloudServiceProvider.cloudItemFromJSON(object)
+                    {
                         completion(.success(item))
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
                     }
-                case .failure(let error):
+                case let .failure(error):
                     completion(.failure(error))
                 }
             }
         }
     }
-    
+
     /// Get files of the target directory. You can use `rootItem` to load files in root folder.
     /// Document can be found here: https://docs.pcloud.com/methods/folder/listfolder.html
     /// - Parameters:
@@ -73,12 +75,13 @@ public class PCloudServiceProvider: CloudServiceProvider {
         let data = ["folderid": directoryItem.id]
         post(url: url, data: data) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
                    let metadata = json["metadata"] as? [String: Any],
-                   let list = metadata["contents"] as? [[String: Any]] {
+                   let list = metadata["contents"] as? [[String: Any]]
+                {
                     let items = list.compactMap { PCloudServiceProvider.cloudItemFromJSON($0) }
-                    items.forEach { item in
+                    for item in items {
                         if item.name == item.path {
                             item.path = [directoryItem.path, item.path].joined(separator: "/")
                         }
@@ -87,12 +90,12 @@ public class PCloudServiceProvider: CloudServiceProvider {
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Copy file/folder to target directory.
     /// Document can be found here:
     /// https://docs.pcloud.com/methods/file/copyfile.html
@@ -102,13 +105,13 @@ public class PCloudServiceProvider: CloudServiceProvider {
     ///   - directory: The target directory.
     ///   - completion: Completion block.
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "copyfolder": "copyfile"
+        let path = item.isDirectory ? "copyfolder" : "copyfile"
         let url = apiURL.appendingPathComponent(path)
         var data: [String: Any] = [:]
         data["path"] = path
         post(url: url, data: data, completion: completion)
     }
-    
+
     /// Create a folder at target directory.
     /// Document can be found here: https://docs.pcloud.com/methods/folder/createfolder.html
     /// - Parameters:
@@ -122,7 +125,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
         data["name"] = folderName
         post(url: url, data: data, completion: completion)
     }
-    
+
     /// Get the space usage information for the current user's account.
     /// Document can be found here: https://docs.pcloud.com/methods/general/userinfo.html
     /// - Parameter completion: Completion block.
@@ -130,21 +133,22 @@ public class PCloudServiceProvider: CloudServiceProvider {
         let url = apiURL.appendingPathComponent("userinfo")
         get(url: url) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
                    let total = json["quota"] as? Int64,
-                   let used = json["usedquota"] as? Int64 {
+                   let used = json["usedquota"] as? Int64
+                {
                     let info = CloudSpaceInformation(totalSpace: total, availableSpace: total - used, json: json)
                     completion(.success(info))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Get information about the current user's account.
     /// Document can be found here: https://docs.pcloud.com/methods/general/userinfo.html
     /// - Parameter completion: Completion block.
@@ -152,20 +156,21 @@ public class PCloudServiceProvider: CloudServiceProvider {
         let url = apiURL.appendingPathComponent("userinfo")
         get(url: url) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
-                   let username = json["email"] as? String {
+                   let username = json["email"] as? String
+                {
                     let account = CloudUser(username: username, json: json)
                     completion(.success(account))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Get a download link for file Takes fileid (or path) as parameter and provides links from which the file can be downloaded.
     /// Document can be found here: https://docs.pcloud.com/methods/streaming/getfilelink.html
     /// - Parameters:
@@ -179,10 +184,11 @@ public class PCloudServiceProvider: CloudServiceProvider {
             let params = ["fileid": item.id]
             get(url: url, params: params) { response in
                 switch response.result {
-                case .success(let result):
+                case let .success(result):
                     if let json = result.json as? [String: Any],
                        let path = json["path"] as? String,
-                       let host = (json["hosts"] as? [String])?.first {
+                       let host = (json["hosts"] as? [String])?.first
+                    {
                         let urlString = String(format: "https://%@%@", host, path)
                         if let url = URL(string: urlString) {
                             completion(.success(url))
@@ -190,13 +196,13 @@ public class PCloudServiceProvider: CloudServiceProvider {
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
                     }
-                case .failure(let error):
+                case let .failure(error):
                     completion(.failure(error))
                 }
             }
         }
     }
-    
+
     /// Move file/folder item to target directory.
     /// Document can be found here:
     /// https://docs.pcloud.com/methods/file/renamefile.html
@@ -217,7 +223,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
         data["tofolderid"] = directory.id
         post(url: url, data: data, completion: completion)
     }
-    
+
     /// Remove file/folder item.
     /// Document can be found here:
     /// Delete File: https://docs.pcloud.com/methods/file/deletefile.html
@@ -226,7 +232,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
     ///   - item: The item to be removed.
     ///   - completion: Completion block.
     public func removeItem(_ item: CloudItem, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "deletefolder": "deletefile"
+        let path = item.isDirectory ? "deletefolder" : "deletefile"
         let url = apiURL.appendingPathComponent(path)
         var data: [String: Any] = [:]
         if item.isDirectory {
@@ -236,7 +242,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
         }
         post(url: url, data: data, completion: completion)
     }
-    
+
     /// Rename file/folder to a new name.
     /// Document can be found here:
     /// Delete File: https://docs.pcloud.com/methods/file/deletefile.html
@@ -253,36 +259,38 @@ public class PCloudServiceProvider: CloudServiceProvider {
         data["toname"] = newName
         post(url: url, data: data, completion: completion)
     }
-    
+
     /// Search file by a keyword.
     /// - Parameters:
     ///   - keyword: The keyword.
     ///   - completion: Completion block.
     public func searchFiles(keyword: String, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
-        
+
         func searchInMemory() {
             let items = allItemsForSearch.filter { $0.name.lowercased().contains(keyword.lowercased()) }
             completion(.success(items))
         }
-        
+
         if allItemsForSearch.isEmpty {
             let url = apiURL.appendingPathComponent("listfolder")
             let data: [String: Any] = [
                 "folderid": rootItem.id,
-                "recursive": 1
+                "recursive": 1,
             ]
             post(url: url, data: data) { response in
                 switch response.result {
-                case .success(let result):
+                case let .success(result):
                     if let json = result.json as? [String: Any],
                        let metadata = json["metadata"] as? [String: Any],
-                       let list = metadata["contents"] as? [Any] {
-                        
+                       let list = metadata["contents"] as? [Any]
+                    {
+
                         var items: [CloudItem] = []
                         func parse(contents: [Any]) {
                             for entry in contents {
                                 if let object = entry as? [String: Any],
-                                   let item = PCloudServiceProvider.cloudItemFromJSON(object) {
+                                   let item = PCloudServiceProvider.cloudItemFromJSON(object)
+                                {
                                     items.append(item)
                                     if let innercontents = item.json["contents"] as? [Any] {
                                         parse(contents: innercontents)
@@ -296,7 +304,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
                     }
-                case .failure(let error):
+                case let .failure(error):
                     completion(.failure(error))
                 }
             }
@@ -304,8 +312,9 @@ public class PCloudServiceProvider: CloudServiceProvider {
             searchInMemory()
         }
     }
-    
-    /// Get a streaming link for audio file Takes fileid (or path) of an audio (or video) file and provides links from which audio can be streamed in mp3 format. (Same way getfilelink does with hosts and path)
+
+    /// Get a streaming link for audio file Takes fileid (or path) of an audio (or video) file and provides links from which audio can be
+    /// streamed in mp3 format. (Same way getfilelink does with hosts and path)
     /// Document can be found here: https://docs.pcloud.com/methods/streaming/getaudiolink.html
     /// - Parameters:
     ///   - item: The audio item.
@@ -315,22 +324,24 @@ public class PCloudServiceProvider: CloudServiceProvider {
         let params = ["fileid": item.id]
         get(url: url, params: params) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
                    let path = json["path"] as? String,
-                   let host = (json["hosts"] as? [String])?.first {
+                   let host = (json["hosts"] as? [String])?.first
+                {
                     let urlString = String(format: "https://%@%@", host, path)
                     if let url = URL(string: urlString) {
                         completion(.success(url))
                     }
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
-    /// Get a streaming link for video file Takes fileid (or path) of a video file and provides links (same way getfilelink does with hosts and path) from which the video can be streamed with lower bitrate (and/or resolution)
+
+    /// Get a streaming link for video file Takes fileid (or path) of a video file and provides links (same way getfilelink does with hosts
+    /// and path) from which the video can be streamed with lower bitrate (and/or resolution)
     /// Document can be found here: https://docs.pcloud.com/methods/streaming/getvideolink.html
     /// - Parameters:
     ///   - item: The video item.
@@ -340,21 +351,22 @@ public class PCloudServiceProvider: CloudServiceProvider {
         let params = ["fileid": item.id]
         get(url: url, params: params) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
                    let path = json["path"] as? String,
-                   let host = (json["hosts"] as? [String])?.first {
+                   let host = (json["hosts"] as? [String])?.first
+                {
                     let urlString = String(format: "https://%@%@", host, path)
                     if let url = URL(string: urlString) {
                         completion(.success(url))
                     }
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Upload file data to target directory.
     /// Document can be found here: https://docs.pcloud.com/methods/file/uploadfile.html
     /// - Parameters:
@@ -363,13 +375,19 @@ public class PCloudServiceProvider: CloudServiceProvider {
     ///   - directory: The target directory.
     ///   - progressHandler: The upload progress reporter.
     ///   - completion: Completion block.
-    public func uploadData(_ data: Data, filename: String, to directory: CloudItem, progressHandler: @escaping ((Progress) -> Void), completion: @escaping CloudCompletionHandler) {
+    public func uploadData(
+        _ data: Data,
+        filename: String,
+        to directory: CloudItem,
+        progressHandler: @escaping ((Progress) -> Void),
+        completion: @escaping CloudCompletionHandler
+    ) {
         let url = apiURL.appendingPathComponent("uploadfile")
-        
+
         var postdata: [String: Any] = [:]
         postdata["filename"] = filename
         postdata["folderid"] = directory.id
-        
+
         let file = HTTPFile.data(filename, data, nil)
         let length = Int64(data.count)
         let reportProgress = Progress(totalUnitCount: length)
@@ -378,7 +396,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
             progressHandler(reportProgress)
         }, completion: completion)
     }
-    
+
     /// Upload file to target directory. (NOT TESTED)
     /// Document can be found here: https://docs.pcloud.com/methods/file/uploadfile.html
     /// - Parameters:
@@ -386,14 +404,19 @@ public class PCloudServiceProvider: CloudServiceProvider {
     ///   - directory: The target directory.
     ///   - progressHandler: The upload progress reporter.
     ///   - completion: Completion block.
-    public func uploadFile(_ fileURL: URL, to directory: CloudItem, progressHandler: @escaping ((Progress) -> Void), completion: @escaping CloudCompletionHandler) {
+    public func uploadFile(
+        _ fileURL: URL,
+        to directory: CloudItem,
+        progressHandler: @escaping ((Progress) -> Void),
+        completion: @escaping CloudCompletionHandler
+    ) {
         guard let length = fileSize(of: fileURL) else { return }
         let url = apiURL.appendingPathComponent("uploadfile")
-        
+
         var data: [String: Any] = [:]
         data["filename"] = fileURL.lastPathComponent
         data["folderid"] = directory.id
-        
+
         let file = HTTPFile.url(fileURL, nil)
         let reportProgress = Progress(totalUnitCount: length)
         post(url: url, files: ["file": file], progressHandler: { progress in
@@ -404,10 +427,11 @@ public class PCloudServiceProvider: CloudServiceProvider {
 }
 
 // MARK: - CloudServiceResponseProcessing
+
 extension PCloudServiceProvider: CloudServiceResponseProcessing {
-    
+
     public static func cloudItemFromJSON(_ json: [String: Any]) -> CloudItem? {
-     
+
         guard let name = json["name"] as? String else {
             return nil
         }
@@ -425,7 +449,7 @@ extension PCloudServiceProvider: CloudServiceResponseProcessing {
         let item = CloudItem(id: id, name: name, path: path, isDirectory: isDirectory, json: json)
         item.size = (json["size"] as? Int64) ?? -1
         item.fileHash = json["hash"] as? String
-        
+
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .full
         dateFormatter.dateFormat = "E, dd MMM yyyy HH:mm:ss ZZZZZ"
@@ -437,10 +461,10 @@ extension PCloudServiceProvider: CloudServiceResponseProcessing {
         if let modified = json["modified"] as? String {
             item.modificationDate = dateFormatter.date(from: modified)
         }
-        
+
         return item
     }
-    
+
     public func shouldProcessResponse(_ response: HTTPResult, completion: @escaping CloudCompletionHandler) -> Bool {
         // https://docs.pcloud.com/protocols/http_json_protocol/
         guard let json = response.json as? [String: Any] else { return false }
@@ -452,4 +476,3 @@ extension PCloudServiceProvider: CloudServiceResponseProcessing {
         return false
     }
 }
-

@@ -1,9 +1,9 @@
 //
-//  Dictionary+OAuthSwift.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 6/21/14.
-//  Copyright (c) 2014 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -37,7 +37,7 @@ extension Dictionary {
         return parts.joined(separator: "&")
     }
 
-    mutating func merge<K, V>(_ dictionaries: Dictionary<K, V>...) {
+    mutating func merge<K, V>(_ dictionaries: [K: V]...) {
         for dict in dictionaries {
             for (key, value) in dict {
                 if let v = value as? Value, let k = key as? Key {
@@ -47,10 +47,10 @@ extension Dictionary {
         }
     }
 
-    func map<K: Hashable, V> (_ transform: (Key, Value) -> (K, V)) -> [K: V] {
+    func map<K: Hashable, V>(_ transform: (Key, Value) -> (K, V)) -> [K: V] {
         var results: [K: V] = [:]
         for k in self.keys {
-            if let value = self[ k ] {
+            if let value = self[k] {
                 let (u, w) = transform(k, value)
                 results.updateValue(w, forKey: u)
             }
@@ -59,9 +59,9 @@ extension Dictionary {
     }
 }
 
-extension Dictionary {
+public extension Dictionary {
     @available(swift, introduced: 3.2, obsoleted: 4.0)
-    public func filter(_ isIncluded: (Key, Value) throws -> Bool) rethrows -> [Key: Value] {
+    func filter(_ isIncluded: (Key, Value) throws -> Bool) rethrows -> [Key: Value] {
         var resultDictionary = [Key: Value](minimumCapacity: count)
         for (key, value) in self {
             if try isIncluded(key, value) {
@@ -72,8 +72,8 @@ extension Dictionary {
     }
 }
 
-func +=<K, V> (left: inout [K: V], right: [K: V]) { left.merge(right) }
-func +<K, V> (left: [K: V], right: [K: V]) -> [K: V] { return left.join(right) }
-func +=<K, V> (left: inout [K: V]?, right: [K: V]) {
+func += <K, V>(left: inout [K: V], right: [K: V]) { left.merge(right) }
+func + <K, V>(left: [K: V], right: [K: V]) -> [K: V] { left.join(right) }
+func += <K, V>(left: inout [K: V]?, right: [K: V]) {
     if left != nil { left?.merge(right) } else { left = right }
 }

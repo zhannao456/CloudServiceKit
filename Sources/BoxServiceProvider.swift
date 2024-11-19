@@ -1,63 +1,64 @@
 //
-//  BoxServiceProvider.swift
-//  
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by alexiscn on 2021/8/9.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
-import Foundation
 import CryptoKit
+import Foundation
 
 /*
  A Wrapper of box Service.
  Developer documents can be found here: https://developer.box.com/reference/
  */
 public class BoxServiceProvider: CloudServiceProvider {
-    
+
     public var delegate: CloudServiceProviderDelegate?
-    
+
     /// The name of service provider.
-    public var name: String { return "Box" }
-    
+    public var name: String { "Box" }
+
     /// The root folder of Box service. You can use this property to list root items.
-    public var rootItem: CloudItem { return CloudItem(id: "0", name: name, path: "/") }
-    
+    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "/") }
+
     public var credential: URLCredential?
-    
+
     /// The api url of box service. Which is [https://api.box.com/2.0](https://api.box.com/2.0) .
     public var apiURL = URL(string: "https://api.box.com/2.0")!
-    
+
     /// The upload url of box service. Which is [https://upload.box.com/api/2.0](https://upload.box.com/api/2.0) .
     private var uploadURL = URL(string: "https://upload.box.com/api/2.0")!
-    
+
     /// The refresh access token handler. Used to refresh access token when the token expires.
     public var refreshAccessTokenHandler: CloudRefreshAccessTokenHandler?
-    
-    required public init(credential: URLCredential?) {
+
+    public required init(credential: URLCredential?) {
         self.credential = credential
     }
-    
+
     /// Get attributes of cloud item.
     /// - Parameters:
     ///   - item: The target item.
     ///   - completion: Completion callback.
     public func attributesOfItem(_ item: CloudItem, completion: @escaping (Result<CloudItem, Error>) -> Void) {
-        let path = item.isDirectory ? "folders": "files"
+        let path = item.isDirectory ? "folders" : "files"
         let url = apiURL.appendingPathComponent("\(path)/\(item.id)")
         get(url: url) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any], let item = BoxServiceProvider.cloudItemFromJSON(json) {
                     completion(.success(item))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
- 
+
     /// Load the contents at directory.
     /// - Parameters:
     ///   - directory: The target directory to load.
@@ -68,7 +69,7 @@ public class BoxServiceProvider: CloudServiceProvider {
         params["fields"] = "id,type,name,size,created_at,modified_at,sha1"
         get(url: url, params: params) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any], let entries = json["entries"] as? [[String: Any]] {
                     let items = entries.compactMap { BoxServiceProvider.cloudItemFromJSON($0) }
                     items.forEach { $0.fixPath(with: directory) }
@@ -76,7 +77,7 @@ public class BoxServiceProvider: CloudServiceProvider {
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
@@ -91,13 +92,13 @@ public class BoxServiceProvider: CloudServiceProvider {
     ///   - directory: The destination directory.
     ///   - completion: Completion callback.
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "folders": "files"
+        let path = item.isDirectory ? "folders" : "files"
         let url = apiURL.appendingPathComponent("\(path)/\(item.id)/copy")
         var json: [String: Any] = [:]
         json["parent"] = ["id": directory.id]
         post(url: url, json: json, completion: completion)
     }
-    
+
     /// Create folder at target folder.
     /// - Parameters:
     ///   - folderName: The folder name to be created.
@@ -110,7 +111,7 @@ public class BoxServiceProvider: CloudServiceProvider {
         json["parent"] = ["id": directory.id]
         post(url: url, json: json, completion: completion)
     }
-    
+
     /// Get download request of file.
     /// - Parameter item: The item to be downloaded.
     /// - Returns: Downloadable request.
@@ -120,10 +121,22 @@ public class BoxServiceProvider: CloudServiceProvider {
         } else {
             let url = apiURL.appendingPathComponent("files/\(item.id)/content")
             let params = ["access_token": credential?.password ?? ""]
-            return Just.adaptor.synthesizeRequest(.get, url: url, params: params, data: [:], json: nil, headers: [:], files: [:], auth: nil, timeout: nil, urlQuery: nil, requestBody: nil)
+            return Just.adaptor.synthesizeRequest(
+                .get,
+                url: url,
+                params: params,
+                data: [:],
+                json: nil,
+                headers: [:],
+                files: [:],
+                auth: nil,
+                timeout: nil,
+                urlQuery: nil,
+                requestBody: nil
+            )
         }
     }
-    
+
     /// Get the space usage information for the current user's account.
     /// Document can be found here: https://developer.box.com/reference/get-users-me/ .
     /// - Parameter completion: Completion block.
@@ -131,21 +144,22 @@ public class BoxServiceProvider: CloudServiceProvider {
         let url = apiURL.appendingPathComponent("users/me")
         get(url: url) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any],
                    let total = json["space_amount"] as? Int64,
-                   let used = json["space_used"] as? Int64 {
+                   let used = json["space_used"] as? Int64
+                {
                     let info = CloudSpaceInformation(totalSpace: total, availableSpace: total - used, json: json)
                     completion(.success(info))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Get information about the current user's account.
     /// Document can be found here https://developer.box.com/reference/get-users-me/
     /// - Parameter completion: Completion block.
@@ -153,53 +167,53 @@ public class BoxServiceProvider: CloudServiceProvider {
         let url = apiURL.appendingPathComponent("users/me")
         get(url: url) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any], let username = json["name"] as? String {
                     let account = CloudUser(username: username, json: json)
                     completion(.success(account))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Remove file/folder.
     /// - Parameters:
     ///   - item: The item to be removed.
     ///   - completion: Completion block.
     public func removeItem(_ item: CloudItem, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "folders": "files"
+        let path = item.isDirectory ? "folders" : "files"
         let url = apiURL.appendingPathComponent("\(path)/\(item.id)")
         delete(url: url, completion: completion)
     }
-    
+
     /// Rename file/folder item to a new name.
     /// - Parameters:
     ///   - item: The item to be renamed.
     ///   - newName: The new name.
     ///   - completion: Completion block.
     public func renameItem(_ item: CloudItem, newName: String, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "folders": "files"
+        let path = item.isDirectory ? "folders" : "files"
         let url = apiURL.appendingPathComponent("\(path)/\(item.id)")
         let json = ["name": newName]
         put(url: url, json: json, completion: completion)
     }
-    
+
     /// Move file/folder to target directory.
     /// - Parameters:
     ///   - item: The item to be moved.
     ///   - directory: The target directory.
     ///   - completion: Completion block.
     public func moveItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {
-        let path = item.isDirectory ? "folders": "files"
+        let path = item.isDirectory ? "folders" : "files"
         let url = apiURL.appendingPathComponent("\(path)/\(item.id)")
         let json = ["parent": ["id": directory.id]]
         put(url: url, json: json, completion: completion)
     }
-    
+
     /// Search file by keyword.
     /// Document can be found here: https://developer.box.com/reference/get-search/
     /// - Parameters:
@@ -210,19 +224,19 @@ public class BoxServiceProvider: CloudServiceProvider {
         let params = ["query": keyword]
         get(url: url, params: params) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let json = result.json as? [String: Any], let entries = json["entries"] as? [[String: Any]] {
                     let items = entries.compactMap { BoxServiceProvider.cloudItemFromJSON($0) }
                     completion(.success(items))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.failure(error))
             }
         }
     }
-    
+
     /// Upload file data to target directory.
     /// Document can be found here: https://developer.box.com/reference/post-files-content/
     /// - Parameters:
@@ -231,28 +245,36 @@ public class BoxServiceProvider: CloudServiceProvider {
     ///   - directory: The target directory.
     ///   - progressHandler: The upload progress reporter. Called in main thread.
     ///   - completion: Completion block.
-    public func uploadData(_ data: Data, filename: String, to directory: CloudItem, progressHandler: @escaping ((Progress) -> Void), completion: @escaping CloudCompletionHandler) {
+    public func uploadData(
+        _ data: Data,
+        filename: String,
+        to directory: CloudItem,
+        progressHandler: @escaping ((Progress) -> Void),
+        completion: @escaping CloudCompletionHandler
+    ) {
         let url = uploadURL.appendingPathComponent("files/content")
-        
+
         let isoDateFormatter = ISO8601DateFormatter()
-        isoDateFormatter.formatOptions = [.withInternetDateTime,
-                                          .withDashSeparatorInDate,
-                                          .withFullDate,
-                                          .withColonSeparatorInTimeZone]
+        isoDateFormatter.formatOptions = [
+            .withInternetDateTime,
+            .withDashSeparatorInDate,
+            .withFullDate,
+            .withColonSeparatorInTimeZone,
+        ]
         isoDateFormatter.timeZone = TimeZone.current
         let time = isoDateFormatter.string(from: Date())
-        
+
         var formdata: [String: Any] = [:]
         formdata["attributes"] = [
             "content_created_at": time,
             "content_modified_at": time,
             "name": filename,
             "parent": [
-                "id": directory.id
-            ]
+                "id": directory.id,
+            ],
         ].json
         let file = HTTPFile.data(filename, data, nil)
-        
+
         let length = Int64(data.count)
         let reportProgress = Progress(totalUnitCount: length)
         post(url: url, data: formdata, files: ["file": file], progressHandler: { progress in
@@ -260,7 +282,7 @@ public class BoxServiceProvider: CloudServiceProvider {
             progressHandler(reportProgress)
         }, completion: completion)
     }
-    
+
     /// Upload file to target directory with local file url.
     /// Note: remote url is not supported.
     /// Document can be found here: https://developer.box.com/guides/uploads/
@@ -269,7 +291,12 @@ public class BoxServiceProvider: CloudServiceProvider {
     ///   - directory: The target directory.
     ///   - progressHandler: The upload progress reporter. Called in main thread.
     ///   - completion: Completion block.
-    public func uploadFile(_ fileURL: URL, to directory: CloudItem, progressHandler: @escaping ((Progress) -> Void), completion: @escaping CloudCompletionHandler) {
+    public func uploadFile(
+        _ fileURL: URL,
+        to directory: CloudItem,
+        progressHandler: @escaping ((Progress) -> Void),
+        completion: @escaping CloudCompletionHandler
+    ) {
         guard let size = fileSize(of: fileURL), size > 0 else {
             completion(.init(response: nil, result: .failure(CloudServiceError.uploadFileNotExist)))
             return
@@ -280,25 +307,32 @@ public class BoxServiceProvider: CloudServiceProvider {
             return
         }
         let url = uploadURL.appendingPathComponent("files/upload_sessions")
-        
+
         var json: [String: Any] = [:]
         json["file_name"] = fileURL.lastPathComponent
         json["file_size"] = size
         json["folder_id"] = directory.id
         post(url: url, json: json) { response in
             switch response.result {
-            case .success(let result):
+            case let .success(result):
                 if let data = result.content {
                     do {
                         let session = try JSONDecoder().decode(UploadSession.self, from: data)
-                        self.uploadPart(session: session, fileURL: fileURL, totalSize: size, offset: 0, progressHandler: progressHandler, completion: completion)
+                        self.uploadPart(
+                            session: session,
+                            fileURL: fileURL,
+                            totalSize: size,
+                            offset: 0,
+                            progressHandler: progressHandler,
+                            completion: completion
+                        )
                     } catch {
                         completion(.init(response: result, result: .failure(CloudServiceError.responseDecodeError(result))))
                     }
                 } else {
                     completion(.init(response: result, result: .failure(CloudServiceError.responseDecodeError(result))))
                 }
-            case .failure(let error):
+            case let .failure(error):
                 completion(.init(response: response.response, result: .failure(error)))
             }
         }
@@ -306,9 +340,17 @@ public class BoxServiceProvider: CloudServiceProvider {
 }
 
 // MARK: - Chunk Upload
+
 extension BoxServiceProvider {
-    
-    private func uploadPart(session: UploadSession, fileURL: URL, totalSize: Int64, offset: Int64, progressHandler: @escaping ((Progress) -> Void), completion: @escaping CloudCompletionHandler) {
+
+    private func uploadPart(
+        session: UploadSession,
+        fileURL: URL,
+        totalSize: Int64,
+        offset: Int64,
+        progressHandler: @escaping ((Progress) -> Void),
+        completion: @escaping CloudCompletionHandler
+    ) {
         do {
             let length = min(Int64(session.partSize), totalSize - offset)
             let handle = try FileHandle(forReadingFrom: fileURL)
@@ -316,7 +358,7 @@ extension BoxServiceProvider {
             let data = handle.readData(ofLength: Int(length))
             let sha1 = Insecure.SHA1.hash(data: data).toBase64()
             try handle.close()
-            
+
             let url = uploadURL
                 .appendingPathComponent("files/upload_sessions")
                 .appendingPathComponent(session.id)
@@ -324,28 +366,35 @@ extension BoxServiceProvider {
             headers["Content-Range"] = String(format: "bytes %ld-%ld/%ld", offset, offset + length - 1, totalSize)
             headers["Digest"] = "sha=\(sha1)"
             headers["Content-Type"] = "application/octet-stream"
-            
+
             let progressReport = Progress(totalUnitCount: totalSize)
             put(url: url, headers: headers, requestBody: data) { progress in
                 progressReport.completedUnitCount = offset + Int64(Float(length) * progress.percent)
                 progressHandler(progressReport)
             } completion: { response in
                 switch response.result {
-                case .success(let result):
+                case let .success(result):
                     do {
                         let content = result.content ?? Data()
-                        let part = (try JSONDecoder().decode(UploadPart.self, from: content)).part
+                        let part = try (JSONDecoder().decode(UploadPart.self, from: content)).part
                         session.parts.append(part)
                         let nextOffset = part.offset + part.size
                         if nextOffset >= totalSize {
                             self.commitUploadSession(session, fileURL: fileURL, completion: completion)
                         } else {
-                            self.uploadPart(session: session, fileURL: fileURL, totalSize: totalSize, offset: nextOffset, progressHandler: progressHandler, completion: completion)
+                            self.uploadPart(
+                                session: session,
+                                fileURL: fileURL,
+                                totalSize: totalSize,
+                                offset: nextOffset,
+                                progressHandler: progressHandler,
+                                completion: completion
+                            )
                         }
                     } catch {
                         completion(.init(response: result, result: .failure(CloudServiceError.responseDecodeError(result))))
                     }
-                case .failure(let error):
+                case let .failure(error):
                     completion(.init(response: response.response, result: .failure(error)))
                 }
             }
@@ -353,7 +402,7 @@ extension BoxServiceProvider {
             completion(.init(response: nil, result: .failure(error)))
         }
     }
-    
+
     private func commitUploadSession(_ session: UploadSession, fileURL: URL, completion: @escaping CloudCompletionHandler) {
         let url = uploadURL.appendingPathComponent("files/upload_sessions")
             .appendingPathComponent(session.id)
@@ -367,7 +416,7 @@ extension BoxServiceProvider {
             while loop {
                 autoreleasepool {
                     let data = fileHandle.readData(ofLength: bufferSize)
-                    if data.count > 0 {
+                    if !data.isEmpty {
                         sha1.update(data: data)
                     } else {
                         loop = false
@@ -379,10 +428,10 @@ extension BoxServiceProvider {
             let json = ["parts": session.parts.map { $0.toJSON() }]
             post(url: url, json: json, headers: headers) { response in
                 switch response.result {
-                case .success(let result):
+                case let .success(result):
                     print(result)
                     completion(.init(response: result, result: .success(result)))
-                case .failure(let error):
+                case let .failure(error):
                     completion(.init(response: response.response, result: .failure(error)))
                 }
             }
@@ -390,15 +439,16 @@ extension BoxServiceProvider {
             completion(.init(response: nil, result: .failure(error)))
         }
     }
-    
 }
 
 // MARK: - CloudServiceResponseProcessing
+
 extension BoxServiceProvider: CloudServiceResponseProcessing {
-    
-    public static func cloudItemFromJSON(_ json: [String : Any]) -> CloudItem? {
+
+    public static func cloudItemFromJSON(_ json: [String: Any]) -> CloudItem? {
         guard let id = json["id"] as? String,
-              let name = json["name"] as? String else {
+              let name = json["name"] as? String
+        else {
             return nil
         }
         let isDirectory = (json["type"] as? String) == "folder"
@@ -416,7 +466,7 @@ extension BoxServiceProvider: CloudServiceResponseProcessing {
         }
         return item
     }
-    
+
     public func shouldProcessResponse(_ response: HTTPResult, completion: @escaping CloudCompletionHandler) -> Bool {
         // https://developer.box.com/reference/resources/client-error/
         guard let json = response.json as? [String: Any] else { return false }
@@ -430,7 +480,6 @@ extension BoxServiceProvider: CloudServiceResponseProcessing {
     }
 }
 
-
 fileprivate class UploadSession: Codable {
     enum CodingKeys: String, CodingKey {
         case id
@@ -441,7 +490,7 @@ fileprivate class UploadSession: Codable {
         case sessionExpiresAt = "session_expires_at"
         case totalParts = "total_parts"
     }
-    
+
     struct EndPoint: Codable {
         enum CodingKeys: String, CodingKey {
             case abort
@@ -451,6 +500,7 @@ fileprivate class UploadSession: Codable {
             case status
             case uploadPart = "upload_part"
         }
+
         let abort: String?
         let commit: String?
         let listParts: String?
@@ -458,7 +508,7 @@ fileprivate class UploadSession: Codable {
         let status: String?
         let uploadPart: String?
     }
-    
+
     let id: String
     let type: String
     let numberOfProcessedParts: Int
@@ -466,7 +516,7 @@ fileprivate class UploadSession: Codable {
     let endPoints: EndPoint
     let sessionExpiresAt: String
     let totalParts: Int
-    
+
     var parts: [UploadPart.Part] = []
 }
 
@@ -478,19 +528,21 @@ fileprivate class UploadPart: Codable {
             case sha1
             case size
         }
+
         let offset: Int64
         let partId: String
         let sha1: String
         let size: Int64
-        
+
         func toJSON() -> [String: Any] {
-            return [
+            [
                 "part_id": partId,
                 "offset": offset,
                 "sha1": sha1,
-                "size": size
+                "size": size,
             ]
         }
     }
+
     let part: Part
 }

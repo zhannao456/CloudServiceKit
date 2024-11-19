@@ -1,16 +1,18 @@
 //
-//  Extensions.swift
-//  CloudServiceKit
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by alexiscn on 2021/9/14.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
-import Foundation
-import CryptoKit
-import UIKit
 import AuthenticationServices
+import CryptoKit
+import Foundation
+import UIKit
 
 // MARK: - Array
+
 extension Array {
     var json: String {
         let data = (try? JSONSerialization.data(withJSONObject: self, options: .fragmentsAllowed)) ?? Data()
@@ -19,6 +21,7 @@ extension Array {
 }
 
 // MARK: - Dictionary
+
 extension Dictionary {
     var json: String {
         let data = (try? JSONSerialization.data(withJSONObject: self, options: .fragmentsAllowed)) ?? Data()
@@ -27,6 +30,7 @@ extension Dictionary {
 }
 
 // MARK: - String
+
 extension String {
     func asciiEscaped() -> String {
         var res = ""
@@ -40,7 +44,7 @@ extension String {
         }
         return res
     }
-    
+
     /// Encodes url string making it ready to be passed as a query parameter. This encodes pretty much everything apart from
     /// alphanumerics and a few other characters compared to standard query encoding.
     var urlEncoded: String {
@@ -50,22 +54,24 @@ extension String {
 }
 
 // MARK: - Digest
+
 extension Digest {
-    
+
     func toHexString() -> String {
         map { String(format: "%02x", $0) }.joined()
     }
-    
+
     func toBase64() -> String {
-        return Data(self).base64EncodedString()
+        Data(self).base64EncodedString()
     }
 }
 
 // MARK: - UIViewController
+
 #if targetEnvironment(macCatalyst) || os(iOS)
 extension UIViewController: ASWebAuthenticationPresentationContextProviding {
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        return view?.window ?? UIApplication.shared.topWindow ?? ASPresentationAnchor()
+        view?.window ?? UIApplication.shared.topWindow ?? ASPresentationAnchor()
     }
 }
 #endif

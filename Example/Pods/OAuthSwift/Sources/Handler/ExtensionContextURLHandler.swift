@@ -1,9 +1,9 @@
 //
-//  ExtensionContextURLHandler.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 01/11/2019.
-//  Copyright © 2019 Dongri Jin, Marchand Eric. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -17,7 +17,8 @@ open class ExtensionContextURLHandler: OAuthSwiftURLHandlerType {
         self.extensionContext = extensionContext
     }
 
-    @objc open func handle(_ url: URL) {
+    @objc
+    open func handle(_ url: URL) {
         extensionContext.open(url, completionHandler: nil)
     }
 }

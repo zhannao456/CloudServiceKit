@@ -1,9 +1,9 @@
 //
-//  OAuthSwiftURLHandlerType.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 11/05/15.
-//  Copyright (c) 2015 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -18,11 +18,12 @@ import AppKit
 
 /// Protocol to defined how to open the url.
 /// You could choose to open using an external browser, a safari controller, an internal webkit view controller, etc...
-@objc public protocol OAuthSwiftURLHandlerType {
+@objc
+public protocol OAuthSwiftURLHandlerType {
     func handle(_ url: URL)
 }
 
-public struct OAuthSwiftURLHandlerTypeFactory {
+public enum OAuthSwiftURLHandlerTypeFactory {
 
     static var `default`: OAuthSwiftURLHandlerType = OAuthSwiftOpenURLExternally.sharedInstance
 }

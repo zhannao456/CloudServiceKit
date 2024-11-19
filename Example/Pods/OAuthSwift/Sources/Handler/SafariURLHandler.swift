@@ -1,14 +1,15 @@
 //
-//  SafariURLHandler.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 01/11/2019.
-//  Copyright © 2019 Dongri Jin, Marchand Eric. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
 // MARK: Open SFSafariViewController
+
 #if os(iOS)
 import SafariServices
 #if canImport(AuthenticationServices)
@@ -20,14 +21,14 @@ open class SafariURLHandler: NSObject, OAuthSwiftURLHandlerType, SFSafariViewCon
 
     public typealias UITransion = (_ controller: SFSafariViewController, _ handler: SafariURLHandler) -> Void
 
-    weak open var oauthSwift: OAuthSwift?
+    open weak var oauthSwift: OAuthSwift?
     open var present: UITransion
     open var dismiss: UITransion
     /// retains observers
     var observers = [String: NSObjectProtocol]()
 
-    open var factory: (_ URL: URL) -> SFSafariViewController = {URL in
-        return SFSafariViewController(url: URL)
+    open var factory: (_ URL: URL) -> SFSafariViewController = { URL in
+        SFSafariViewController(url: URL)
     }
 
     /// delegates
@@ -57,7 +58,8 @@ open class SafariURLHandler: NSObject, OAuthSwiftURLHandlerType, SFSafariViewCon
         self.dismiss = dismiss
     }
 
-    @objc open func handle(_ url: URL) {
+    @objc
+    open func handle(_ url: URL) {
         let controller = factory(url)
         controller.delegate = self
         OAuthSwift.log?.trace("SFSafariViewController: present Safari view controller")
@@ -110,8 +112,12 @@ open class SafariURLHandler: NSObject, OAuthSwiftURLHandlerType, SFSafariViewCon
     }
 
     /// SFSafariViewControllerDelegate
-    public func safariViewController(_ controller: SFSafariViewController, activityItemsFor URL: Foundation.URL, title: String?) -> [UIActivity] {
-        return self.delegate?.safariViewController?(controller, activityItemsFor: URL, title: title) ?? []
+    public func safariViewController(
+        _ controller: SFSafariViewController,
+        activityItemsFor URL: Foundation.URL,
+        title: String?
+    ) -> [UIActivity] {
+        self.delegate?.safariViewController?(controller, activityItemsFor: URL, title: title) ?? []
     }
 
     public func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
@@ -123,6 +129,5 @@ open class SafariURLHandler: NSObject, OAuthSwiftURLHandlerType, SFSafariViewCon
     public func safariViewController(_ controller: SFSafariViewController, didCompleteInitialLoad didLoadSuccessfully: Bool) {
         self.delegate?.safariViewController?(controller, didCompleteInitialLoad: didLoadSuccessfully)
     }
-
 }
 #endif

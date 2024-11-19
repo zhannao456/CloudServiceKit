@@ -1,14 +1,15 @@
 //
-//  OAuthSwiftError.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 02/10/16.
-//  Copyright © 2016 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
 // MARK: - OAuthSwift errors
+
 public enum OAuthSwiftError: Error {
 
     /// Configuration problem with oauth provider.
@@ -70,7 +71,7 @@ public enum OAuthSwiftError: Error {
         case .stateNotEqual: return Code.stateNotEqual
         case .serverError: return Code.serverError
         case .encodingError: return Code.encodingError
-        case .cancelled : return Code.cancelled
+        case .cancelled: return Code.cancelled
         case .requestCreation: return Code.requestCreation
         case .missingToken: return Code.missingToken
         case .retain: return Code.retain
@@ -83,44 +84,43 @@ public enum OAuthSwiftError: Error {
 
     public var underlyingError: Error? {
         switch self {
-        case .tokenExpired(let e): return e
-        case .requestError(let e, _): return e
-        case .authorizationPending(let e, _): return e
-        case .slowDown(let e, _): return e
-        case .accessDenied(let e, _): return e
+        case let .tokenExpired(e): return e
+        case let .requestError(e, _): return e
+        case let .authorizationPending(e, _): return e
+        case let .slowDown(e, _): return e
+        case let .accessDenied(e, _): return e
         default: return nil
         }
     }
 
     public var underlyingMessage: String? {
         switch self {
-        case .serverError(let m): return m
-        case .configurationError(let m): return m
-        case .requestCreation(let m): return m
+        case let .serverError(m): return m
+        case let .configurationError(m): return m
+        case let .requestCreation(m): return m
         default: return nil
         }
     }
-
 }
 
 extension OAuthSwiftError: CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .configurationError(let m): return "configurationError[\(m)]"
-        case .tokenExpired(let e): return "tokenExpired[\(String(describing: e))]"
+        case let .configurationError(m): return "configurationError[\(m)]"
+        case let .tokenExpired(e): return "tokenExpired[\(String(describing: e))]"
         case .missingState: return "missingState"
-        case .stateNotEqual(let s, let e): return "stateNotEqual[\(s)<>\(e)]"
-        case .serverError(let m): return "serverError[\(m)]"
-        case .encodingError(let urlString): return "encodingError[\(urlString)]"
-        case .requestCreation(let m): return "requestCreation[\(m)]"
+        case let .stateNotEqual(s, e): return "stateNotEqual[\(s)<>\(e)]"
+        case let .serverError(m): return "serverError[\(m)]"
+        case let .encodingError(urlString): return "encodingError[\(urlString)]"
+        case let .requestCreation(m): return "requestCreation[\(m)]"
         case .missingToken: return "missingToken"
         case .retain: return "retain"
-        case .requestError(let e, _): return "requestError[\(e)]"
-        case .slowDown : return "slowDown"
-        case .accessDenied : return "accessDenied"
+        case let .requestError(e, _): return "requestError[\(e)]"
+        case .slowDown: return "slowDown"
+        case .accessDenied: return "accessDenied"
         case .authorizationPending: return "authorizationPending"
-        case .cancelled : return "cancelled"
+        case .cancelled: return "cancelled"
         }
     }
 }
@@ -128,9 +128,10 @@ extension OAuthSwiftError: CustomStringConvertible {
 extension OAuthSwift {
     static func retainError(_ completionHandler: OAuthSwiftHTTPRequest.CompletionHandler?) {
         #if !OAUTH_NO_RETAIN_ERROR
-            completionHandler?(.failure(OAuthSwiftError.retain))
+        completionHandler?(.failure(OAuthSwiftError.retain))
         #endif
     }
+
     static func retainError(_ completionHandler: TokenCompletionHandler?) {
         #if !OAUTH_NO_RETAIN_ERROR
         completionHandler?(.failure(OAuthSwiftError.retain))
@@ -139,36 +140,35 @@ extension OAuthSwift {
 }
 
 // MARK: NSError
+
 extension OAuthSwiftError: CustomNSError {
 
-    public static var errorDomain: String { return OAuthSwiftError.Domain }
+    public static var errorDomain: String { OAuthSwiftError.Domain }
 
-    public var errorCode: Int { return self.code.rawValue }
+    public var errorCode: Int { self.code.rawValue }
 
     /// The user-info dictionary.
     public var errorUserInfo: [String: Any] {
         switch self {
-        case .configurationError(let m): return ["message": m]
-        case .serverError(let m): return ["message": m]
-        case .requestCreation(let m): return ["message": m]
-
-        case .tokenExpired(let e): return ["error": e as Any]
-        case .requestError(let e, let request): return ["error": e, "request": request]
-        case .authorizationPending(let e, let request): return ["error": e, "request": request]
-        case .slowDown(let e, let request): return ["error": e, "request": request]
-        case .accessDenied(let e, let request): return ["error": e, "request": request]
-
-        case .encodingError(let urlString): return ["url": urlString]
-
-        case .stateNotEqual(let s, let e): return ["state": s, "expected": e]
+        case let .configurationError(m): return ["message": m]
+        case let .serverError(m): return ["message": m]
+        case let .requestCreation(m): return ["message": m]
+        case let .tokenExpired(e): return ["error": e as Any]
+        case let .requestError(e, request): return ["error": e, "request": request]
+        case let .authorizationPending(e, request): return ["error": e, "request": request]
+        case let .slowDown(e, request): return ["error": e, "request": request]
+        case let .accessDenied(e, request): return ["error": e, "request": request]
+        case let .encodingError(urlString): return ["url": urlString]
+        case let .stateNotEqual(s, e): return ["state": s, "expected": e]
         default: return [:]
         }
     }
 
     public var _code: Int {
-        return self.code.rawValue
+        self.code.rawValue
     }
+
     public var _domain: String {
-        return OAuthSwiftError.Domain
+        OAuthSwiftError.Domain
     }
 }

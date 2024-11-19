@@ -1,9 +1,9 @@
 //
-//  SHA1.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 1/28/15.
-//  Copyright (c) 2015 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -12,11 +12,12 @@ class SHA1 {
 
     private var message: [UInt8]
 
-    fileprivate let h: [UInt32] = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0]
+    fileprivate let h: [UInt32] = [0x6745_2301, 0xEFCD_AB89, 0x98BA_DCFE, 0x1032_5476, 0xC3D2_E1F0]
 
     init(_ message: Data) {
         self.message = message.bytes
     }
+
     init(_ message: [UInt8]) {
         self.message = message
     }
@@ -57,17 +58,17 @@ class SHA1 {
             // break chunk into sixteen 32-bit words M[j], 0 ≤ j ≤ 15, big-endian
             // Extend the sixteen 32-bit words into eighty 32-bit words:
             var M: [UInt32] = [UInt32](repeating: 0, count: 80)
-            for x in 0..<M.count {
+            for x in 0 ..< M.count {
                 switch x {
-                case 0...15:
+                case 0 ... 15:
 
                     let memorySize = MemoryLayout<UInt32>.size
                     let start = chunk.startIndex + (x * memorySize)
                     let end = start + memorySize
-                    let le = chunk[start..<end].toUInt32
+                    let le = chunk[start ..< end].toUInt32
                     M[x] = le.bigEndian
                 default:
-                    M[x] = rotateLeft(M[x-3] ^ M[x-8] ^ M[x-14] ^ M[x-16], n: 1)
+                    M[x] = rotateLeft(M[x - 3] ^ M[x - 8] ^ M[x - 14] ^ M[x - 16], n: 1)
                 }
             }
 
@@ -78,58 +79,56 @@ class SHA1 {
             var E = hh[4]
 
             // Main loop
-            for j in 0...79 {
+            for j in 0 ... 79 {
                 var f: UInt32 = 0
                 var k: UInt32 = 0
 
                 switch j {
-                case 0...19:
+                case 0 ... 19:
                     f = (B & C) | ((~B) & D)
-                    k = 0x5A827999
-                case 20...39:
+                    k = 0x5A82_7999
+                case 20 ... 39:
                     f = B ^ C ^ D
-                    k = 0x6ED9EBA1
-                case 40...59:
+                    k = 0x6ED9_EBA1
+                case 40 ... 59:
                     f = (B & C) | (B & D) | (C & D)
-                    k = 0x8F1BBCDC
-                case 60...79:
+                    k = 0x8F1B_BCDC
+                case 60 ... 79:
                     f = B ^ C ^ D
-                    k = 0xCA62C1D6
+                    k = 0xCA62_C1D6
                 default:
                     break
                 }
 
-                let temp = (rotateLeft(A, n: 5) &+ f &+ E &+ M[j] &+ k) & 0xffffffff
+                let temp = (rotateLeft(A, n: 5) &+ f &+ E &+ M[j] &+ k) & 0xFFFF_FFFF
                 E = D
                 D = C
                 C = rotateLeft(B, n: 30)
                 B = A
                 A = temp
-
             }
 
-            hh[0] = (hh[0] &+ A) & 0xffffffff
-            hh[1] = (hh[1] &+ B) & 0xffffffff
-            hh[2] = (hh[2] &+ C) & 0xffffffff
-            hh[3] = (hh[3] &+ D) & 0xffffffff
-            hh[4] = (hh[4] &+ E) & 0xffffffff
+            hh[0] = (hh[0] &+ A) & 0xFFFF_FFFF
+            hh[1] = (hh[1] &+ B) & 0xFFFF_FFFF
+            hh[2] = (hh[2] &+ C) & 0xFFFF_FFFF
+            hh[3] = (hh[3] &+ D) & 0xFFFF_FFFF
+            hh[4] = (hh[4] &+ E) & 0xFFFF_FFFF
         }
 
         // Produce the final hash value (big-endian) as a 160 bit number:
         var result = [UInt8]()
         result.reserveCapacity(hh.count / 4)
-        hh.forEach {
-            let item = $0.bigEndian
-            result += [UInt8(item & 0xff), UInt8((item >> 8) & 0xff), UInt8((item >> 16) & 0xff), UInt8((item >> 24) & 0xff)]
+        for element in hh {
+            let item = element.bigEndian
+            result += [UInt8(item & 0xFF), UInt8((item >> 8) & 0xFF), UInt8((item >> 16) & 0xFF), UInt8((item >> 24) & 0xFF)]
         }
 
         return result
     }
 
     private func rotateLeft(_ v: UInt32, n: UInt32) -> UInt32 {
-        return ((v << n) & 0xFFFFFFFF) | (v >> (32 - n))
+        ((v << n) & 0xFFFF_FFFF) | (v >> (32 - n))
     }
-
 }
 
 private struct BytesSequence<D: RandomAccessCollection>: Sequence where D.Iterator.Element == UInt8, D.Index == Int {
@@ -140,7 +139,7 @@ private struct BytesSequence<D: RandomAccessCollection>: Sequence where D.Iterat
         var offset = data.startIndex
         return AnyIterator {
             let end = Swift.min(self.chunkSize, self.data.count - offset)
-            let result = self.data[offset..<offset + end]
+            let result = self.data[offset ..< offset + end]
             offset = offset.advanced(by: result.count)
             if !result.isEmpty {
                 return result
@@ -148,5 +147,4 @@ private struct BytesSequence<D: RandomAccessCollection>: Sequence where D.Iterat
             return nil
         }
     }
-
 }

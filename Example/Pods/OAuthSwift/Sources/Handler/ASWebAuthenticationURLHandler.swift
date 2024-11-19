@@ -1,9 +1,9 @@
 //
-//  ASWebAuthenticationURLHandler.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by phimage on 01/11/2019.
-//  Copyright © 2019 Dongri Jin, Marchand Eric. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 #if targetEnvironment(macCatalyst) || os(iOS)
@@ -19,7 +19,11 @@ open class ASWebAuthenticationURLHandler: OAuthSwiftURLHandlerType {
 
     weak var presentationContextProvider: ASWebAuthenticationPresentationContextProviding?
 
-    public init(callbackUrlScheme: String, presentationContextProvider: ASWebAuthenticationPresentationContextProviding?, prefersEphemeralWebBrowserSession: Bool = false) {
+    public init(
+        callbackUrlScheme: String,
+        presentationContextProvider: ASWebAuthenticationPresentationContextProviding?,
+        prefersEphemeralWebBrowserSession: Bool = false
+    ) {
         self.callbackUrlScheme = callbackUrlScheme
         self.presentationContextProvider = presentationContextProvider
         self.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
@@ -34,7 +38,8 @@ open class ASWebAuthenticationURLHandler: OAuthSwiftURLHandlerType {
                     let msg = error.localizedDescription.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
                     let errorDomain = (error as NSError).domain
                     let errorCode = (error as NSError).code
-                    let urlString = "\(self.callbackUrlScheme):?error=\(msg ?? "UNKNOWN")&error_domain=\(errorDomain)&error_code=\(errorCode)"
+                    let urlString =
+                        "\(self.callbackUrlScheme):?error=\(msg ?? "UNKNOWN")&error_domain=\(errorDomain)&error_code=\(errorCode)"
                     let url = URL(string: urlString)!
                     #if !OAUTH_APP_EXTENSIONS
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -44,20 +49,20 @@ open class ASWebAuthenticationURLHandler: OAuthSwiftURLHandlerType {
                     UIApplication.shared.open(successURL, options: [:], completionHandler: nil)
                     #endif
                 }
-        })
+            }
+        )
         webAuthSession.presentationContextProvider = presentationContextProvider
         webAuthSession.prefersEphemeralWebBrowserSession = prefersEphemeralWebBrowserSession
 
         _ = webAuthSession.start()
         OAuthSwift.log?.trace("ASWebAuthenticationSession is started")
-
     }
 }
 
 @available(iOS 13.0, macCatalyst 13.0, *)
 extension ASWebAuthenticationURLHandler {
     static func isCancelledError(domain: String, code: Int) -> Bool {
-        return domain == ASWebAuthenticationSessionErrorDomain &&
+        domain == ASWebAuthenticationSessionErrorDomain &&
             code == ASWebAuthenticationSessionError.canceledLogin.rawValue
     }
 }

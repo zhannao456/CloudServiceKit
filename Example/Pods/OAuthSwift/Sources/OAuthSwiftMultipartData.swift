@@ -1,9 +1,9 @@
 //
-//  OAuthSwiftMultipartData.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Tomohiro Kawaji on 12/18/15.
-//  Copyright (c) 2015 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -21,12 +21,11 @@ public struct OAuthSwiftMultipartData {
         self.fileName = fileName
         self.mimeType = mimeType
     }
-
 }
 
-extension Data {
+public extension Data {
 
-    public mutating func append(_ multipartData: OAuthSwiftMultipartData, encoding: String.Encoding, separatorData: Data) {
+    mutating func append(_ multipartData: OAuthSwiftMultipartData, encoding: String.Encoding, separatorData: Data) {
         var filenameClause = ""
         if let filename = multipartData.fileName {
             filenameClause = "; filename=\"\(filename)\""

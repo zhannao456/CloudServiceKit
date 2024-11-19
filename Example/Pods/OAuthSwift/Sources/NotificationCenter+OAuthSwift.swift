@@ -1,9 +1,9 @@
 //
-//  NotificationCenter+OAuthSwift.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by hiragram on 2017/04/04.
-//  Copyright © 2017年 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -12,6 +12,7 @@ public extension Notification.Name {
     @available(*, deprecated, renamed: "OAuthSwift.didHandleCallbackURL")
     static let OAuthSwiftHandleCallbackURL: Notification.Name = OAuthSwift.didHandleCallbackURL
 }
+
 public extension OAuthSwift {
     static let didHandleCallbackURL: Notification.Name = .init("OAuthSwiftCallbackNotificationName")
 }

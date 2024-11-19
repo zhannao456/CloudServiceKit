@@ -1,4 +1,12 @@
 //
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
+//
+
+//
 //  OAuthSwiftCredential.swift
 //  OAuthSwift
 //
@@ -45,7 +53,8 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
     public static let supportsSecureCoding = true
 
     public enum Version: Codable {
-        case oauth1, oauth2
+        case oauth1
+        case oauth2
 
         public var shortVersion: String {
             switch self {
@@ -82,14 +91,14 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         }
 
         public init(from decoder: Decoder) throws {
-            self.init(try decoder.singleValueContainer().decode(Int32.self))
+            try self.init(decoder.singleValueContainer().decode(Int32.self))
         }
     }
 
     public enum SignatureMethod: String {
         case HMAC_SHA1 = "HMAC-SHA1"
         case RSA_SHA1 = "RSA-SHA1"
-        case PLAINTEXT = "PLAINTEXT"
+        case PLAINTEXT
 
         public static var delegates: [SignatureMethod: OAuthSwiftSignatureDelegate.Type] =
             [HMAC_SHA1: HMAC.self]
@@ -110,10 +119,10 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
             assert(self == .PLAINTEXT, "No signature method installed for \(self)")
             return message
         }
-
     }
 
     // MARK: attributes
+
     open internal(set) var consumerKey = ""
     open internal(set) var consumerSecret = ""
     open var oauthToken = ""
@@ -128,8 +137,8 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
     open var headersFactory: OAuthSwiftCredentialHeadersFactory?
 
     // MARK: init
-    override init() {
-    }
+
+    override init() {}
 
     public init(consumerKey: String, consumerSecret: String) {
         self.consumerKey = consumerKey
@@ -137,7 +146,8 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
     }
 
     // MARK: NSCoding protocol
-    fileprivate struct NSCodingKeys {
+
+    fileprivate enum NSCodingKeys {
         static let bundleId = Bundle.main.bundleIdentifier
             ?? Bundle(for: OAuthSwiftCredential.self).bundleIdentifier
             ?? ""
@@ -158,8 +168,11 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
     public required convenience init?(coder decoder: NSCoder) {
 
         guard let consumerKey = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.consumerKey) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.consumerKey
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
                 let error = CocoaError.error(.coderValueNotFound)
                 decoder.failWithError(error)
@@ -168,8 +181,11 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         }
 
         guard let consumerSecret = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.consumerSecret) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.consumerSecret
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
                 let error = CocoaError.error(.coderValueNotFound)
                 decoder.failWithError(error)
@@ -179,8 +195,11 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         self.init(consumerKey: consumerKey, consumerSecret: consumerSecret)
 
         guard let oauthToken = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.oauthToken) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.oauthToken
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
                 let error = CocoaError.error(.coderValueNotFound)
                 decoder.failWithError(error)
@@ -190,8 +209,11 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         self.oauthToken = oauthToken
 
         guard let oauthRefreshToken = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.oauthRefreshToken) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.oauthRefreshToken
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
                 let error = CocoaError.error(.coderValueNotFound)
                 decoder.failWithError(error)
@@ -201,8 +223,11 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         self.oauthRefreshToken = oauthRefreshToken
 
         guard let oauthTokenSecret = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.oauthTokenSecret) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.oauthTokenSecret
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
                 let error = CocoaError.error(.coderValueNotFound)
                 decoder.failWithError(error)
@@ -212,11 +237,14 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         self.oauthTokenSecret = oauthTokenSecret
 
         guard let oauthVerifier = decoder
-            .decodeObject(of: NSString.self,
-                          forKey: NSCodingKeys.oauthVerifier) as String? else {
+            .decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.oauthVerifier
+            ) as String?
+        else {
             if #available(iOS 9, OSX 10.11, *) {
-                    let error = CocoaError.error(.coderValueNotFound)
-                    decoder.failWithError(error)
+                let error = CocoaError.error(.coderValueNotFound)
+                decoder.failWithError(error)
             }
             return nil
         }
@@ -226,7 +254,10 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
             .decodeObject(of: NSDate.self, forKey: NSCodingKeys.oauthTokenExpiresAt) as Date?
         self.version = Version(decoder.decodeInt32(forKey: NSCodingKeys.version))
         if case .oauth1 = version {
-            self.signatureMethod = SignatureMethod(rawValue: (decoder.decodeObject(of: NSString.self, forKey: NSCodingKeys.signatureMethod) as String?) ?? "HMAC_SHA1") ?? .HMAC_SHA1
+            self.signatureMethod = SignatureMethod(rawValue: (decoder.decodeObject(
+                of: NSString.self,
+                forKey: NSCodingKeys.signatureMethod
+            ) as String?) ?? "HMAC_SHA1") ?? .HMAC_SHA1
         }
 
         OAuthSwift.log?.trace("Credential object is decoded")
@@ -245,11 +276,12 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
             coder.encode(self.signatureMethod.rawValue, forKey: NSCodingKeys.signatureMethod)
         }
         OAuthSwift.log?.trace("Credential object is encoded")
-
     }
+
     // } // End NSCoding extension
 
     // MARK: Codable protocol
+
     enum CodingKeys: String, CodingKey {
         case consumerKey
         case consumerSecret
@@ -276,7 +308,6 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
             try container.encode(self.signatureMethod.rawValue, forKey: .signatureMethodRawValue)
         }
         OAuthSwift.log?.trace("Credential object is encoded")
-
     }
 
     public required convenience init(from decoder: Decoder) throws {
@@ -295,13 +326,22 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         self.version = try container.decode(type(of: self.version), forKey: .version)
 
         if case .oauth1 = version {
-            self.signatureMethod = SignatureMethod(rawValue: try container.decode(type(of: self.signatureMethod.rawValue), forKey: .signatureMethodRawValue))!
+            self.signatureMethod = try SignatureMethod(rawValue: container.decode(
+                type(of: self.signatureMethod.rawValue),
+                forKey: .signatureMethodRawValue
+            ))!
         }
     }
 
     // MARK: functions
+
     /// for OAuth1 parameters must contains sorted query parameters and url must not contains query parameters
-    open func makeHeaders(_ url: URL, method: OAuthSwiftHTTPRequest.Method, parameters: OAuthSwift.Parameters, body: Data? = nil) -> [String: String] {
+    open func makeHeaders(
+        _ url: URL,
+        method: OAuthSwiftHTTPRequest.Method,
+        parameters: OAuthSwift.Parameters,
+        body: Data? = nil
+    ) -> [String: String] {
         if let factory = headersFactory {
             return factory.make(url, method: method, parameters: parameters, body: body)
         }
@@ -313,7 +353,12 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         }
     }
 
-    open func authorizationHeader(method: OAuthSwiftHTTPRequest.Method, url: URL, parameters: OAuthSwift.Parameters, body: Data? = nil) -> String {
+    open func authorizationHeader(
+        method: OAuthSwiftHTTPRequest.Method,
+        url: URL,
+        parameters: OAuthSwift.Parameters,
+        body: Data? = nil
+    ) -> String {
         let timestamp = String(Int64(Date().timeIntervalSince1970))
         let nonce = OAuthSwiftCredential.generateNonce()
         return self.authorizationHeader(method: method, url: url, parameters: parameters, body: body, timestamp: timestamp, nonce: nonce)
@@ -321,12 +366,26 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
 
     open class func generateNonce() -> String {
         let uuidString: String = UUID().uuidString
-        return uuidString[0..<8]
+        return uuidString[0 ..< 8]
     }
 
-    open func authorizationHeader(method: OAuthSwiftHTTPRequest.Method, url: URL, parameters: OAuthSwift.Parameters, body: Data? = nil, timestamp: String, nonce: String) -> String {
+    open func authorizationHeader(
+        method: OAuthSwiftHTTPRequest.Method,
+        url: URL,
+        parameters: OAuthSwift.Parameters,
+        body: Data? = nil,
+        timestamp: String,
+        nonce: String
+    ) -> String {
         assert(self.version == .oauth1)
-        let authorizationParameters = self.authorizationParametersWithSignature(method: method, url: url, parameters: parameters, body: body, timestamp: timestamp, nonce: nonce)
+        let authorizationParameters = self.authorizationParametersWithSignature(
+            method: method,
+            url: url,
+            parameters: parameters,
+            body: body,
+            timestamp: timestamp,
+            nonce: nonce
+        )
 
         var parameterComponents = authorizationParameters.urlEncodedQuery.components(separatedBy: "&") as [String]
         parameterComponents.sort { $0 < $1 }
@@ -343,13 +402,32 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
         return "OAuth " + headerComponents.joined(separator: ", ")
     }
 
-    open func authorizationParametersWithSignature(method: OAuthSwiftHTTPRequest.Method, url: URL, parameters: OAuthSwift.Parameters, body: Data? = nil) -> OAuthSwift.Parameters {
+    open func authorizationParametersWithSignature(
+        method: OAuthSwiftHTTPRequest.Method,
+        url: URL,
+        parameters: OAuthSwift.Parameters,
+        body: Data? = nil
+    ) -> OAuthSwift.Parameters {
         let timestamp = String(Int64(Date().timeIntervalSince1970))
         let nonce = OAuthSwiftCredential.generateNonce()
-        return self.authorizationParametersWithSignature(method: method, url: url, parameters: parameters, body: body, timestamp: timestamp, nonce: nonce)
+        return self.authorizationParametersWithSignature(
+            method: method,
+            url: url,
+            parameters: parameters,
+            body: body,
+            timestamp: timestamp,
+            nonce: nonce
+        )
     }
 
-    open func authorizationParametersWithSignature(method: OAuthSwiftHTTPRequest.Method, url: URL, parameters: OAuthSwift.Parameters, body: Data? = nil, timestamp: String, nonce: String) -> OAuthSwift.Parameters {
+    open func authorizationParametersWithSignature(
+        method: OAuthSwiftHTTPRequest.Method,
+        url: URL,
+        parameters: OAuthSwift.Parameters,
+        body: Data? = nil,
+        timestamp: String,
+        nonce: String
+    ) -> OAuthSwift.Parameters {
         var authorizationParameters = self.authorizationParameters(body, timestamp: timestamp, nonce: nonce)
 
         for (key, value) in parameters {
@@ -368,7 +446,7 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
     open func authorizationParameters(_ body: Data?, timestamp: String, nonce: String) -> OAuthSwift.Parameters {
         var authorizationParameters = OAuthSwift.Parameters()
         authorizationParameters["oauth_version"] = self.version.shortVersion
-        authorizationParameters["oauth_signature_method"] =  self.signatureMethod.rawValue
+        authorizationParameters["oauth_signature_method"] = self.signatureMethod.rawValue
         authorizationParameters["oauth_consumer_key"] = self.consumerKey
         authorizationParameters["oauth_timestamp"] = timestamp
         authorizationParameters["oauth_nonce"] = nonce
@@ -440,5 +518,4 @@ open class OAuthSwiftCredential: NSObject, NSSecureCoding, Codable {
             && lhs.version == rhs.version
             && lhs.signatureMethod == rhs.signatureMethod
     }
-
 }

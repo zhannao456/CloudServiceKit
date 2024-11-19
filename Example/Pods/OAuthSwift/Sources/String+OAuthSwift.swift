@@ -1,9 +1,9 @@
 //
-//  String+OAuthSwift.swift
-//  OAuthSwift
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  Created by Dongri Jin on 6/21/14.
-//  Copyright (c) 2014 Dongri Jin. All rights reserved.
+// Copyright (c) 2024 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -11,7 +11,7 @@ import Foundation
 extension String {
 
     var parametersFromQueryString: [String: String] {
-        return dictionaryBySplitting("&", keyValueSeparator: "=")
+        dictionaryBySplitting("&", keyValueSeparator: "=")
     }
 
     /// Encodes url string making it ready to be passed as a query parameter. This encodes pretty much everything apart from
@@ -22,11 +22,16 @@ extension String {
     }
 
     var urlQueryEncoded: String? {
-        return self.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
+        self.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)
     }
 
     /// Returns new url query string by appending query parameter encoding it first, if specified.
-    func urlQueryByAppending(parameter name: String, value: String, encode: Bool = true, _ encodeError: ((String, String) -> Void)? = nil) -> String? {
+    func urlQueryByAppending(
+        parameter name: String,
+        value: String,
+        encode: Bool = true,
+        _ encodeError: ((String, String) -> Void)? = nil
+    ) -> String? {
         if value.isEmpty {
             return self
         } else if let value = encode ? value.urlQueryEncoded : value {
@@ -39,7 +44,7 @@ extension String {
 
     /// Returns new url string by appending query string at the end.
     func urlByAppending(query: String) -> String {
-        return "\(self)\(self.contains("?") ? "&" : "?")\(query)"
+        "\(self)\(self.contains("?") ? "&" : "?")\(query)"
     }
 
     fileprivate func dictionaryBySplitting(_ elementSeparator: String, keyValueSeparator: String) -> [String: String] {
@@ -110,27 +115,27 @@ extension String {
     }
 
     public var headerDictionary: OAuthSwift.Headers {
-        return dictionaryBySplitting(",", keyValueSeparator: "=")
+        dictionaryBySplitting(",", keyValueSeparator: "=")
     }
 
     var safeStringByRemovingPercentEncoding: String {
-        return self.removingPercentEncoding ?? self
+        self.removingPercentEncoding ?? self
     }
 
     mutating func dropLast() {
         self.remove(at: self.index(before: self.endIndex))
     }
 
-    subscript (bounds: CountableClosedRange<Int>) -> String {
+    subscript(bounds: CountableClosedRange<Int>) -> String {
         let start = index(startIndex, offsetBy: bounds.lowerBound)
         let end = index(startIndex, offsetBy: bounds.upperBound)
-        return String(self[start...end])
+        return String(self[start ... end])
     }
 
-    subscript (bounds: CountableRange<Int>) -> String {
+    subscript(bounds: CountableRange<Int>) -> String {
         let start = index(startIndex, offsetBy: bounds.lowerBound)
         let end = index(startIndex, offsetBy: bounds.upperBound)
-        return String(self[start..<end])
+        return String(self[start ..< end])
     }
 }
 
@@ -138,8 +143,7 @@ extension String.Encoding {
 
     var charset: String {
         let charset = CFStringConvertEncodingToIANACharSetName(CFStringConvertNSStringEncodingToEncoding(self.rawValue))
-         // swiftlint:disable:next force_cast superfluous_disable_command
+        // swiftlint:disable:next force_cast superfluous_disable_command
         return charset! as String
     }
-
 }
