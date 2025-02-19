@@ -761,7 +761,6 @@ public final class HTTP: NSObject, URLSessionDelegate, JustAdaptor {
     }
 
     var taskConfigs: [TaskID: TaskConfiguration] = [:]
-    private let taskConfigLock = NSLock()
     var defaults: JustSessionDefaults!
     var session: URLSession!
     var invalidURLError = NSError(
@@ -825,9 +824,7 @@ public final class HTTP: NSObject, URLSessionDelegate, JustAdaptor {
         -> URLSessionDataTask?
     {
         let task = session.dataTask(with: request)
-        taskConfigLock.lock()
         taskConfigs[task.taskIdentifier] = configuration
-        taskConfigLock.unlock()
         return task
     }
 
@@ -1090,7 +1087,7 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
     ) {
         var endCredential: URLCredential? = nil
 
-        if let taskConfig = getConfig(for: task.taskIdentifier),
+        if let taskConfig = taskConfigs[task.taskIdentifier],
            let credential = taskConfig.credential
         {
             if !(challenge.previousFailureCount > 0) {
@@ -1112,7 +1109,7 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
         newRequest request: URLRequest,
         completionHandler: @escaping (URLRequest?) -> Void
     ) {
-        if let allowRedirects = getConfig(for: task.taskIdentifier)?.redirects {
+        if let allowRedirects = taskConfigs[task.taskIdentifier]?.redirects {
             if !allowRedirects {
                 completionHandler(nil)
                 return
@@ -1130,7 +1127,7 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
         totalBytesSent: Int64,
         totalBytesExpectedToSend: Int64
     ) {
-        if let handler = getConfig(for: task.taskIdentifier)?.progressHandler {
+        if let handler = taskConfigs[task.taskIdentifier]?.progressHandler {
             handler(
                 HTTPProgress(
                     type: .upload,
@@ -1142,18 +1139,12 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
         }
     }
 
-    func getConfig(for taskID: Int) -> TaskConfiguration? {
-        taskConfigLock.lock()
-        defer { taskConfigLock.unlock() }
-        return taskConfigs[taskID]
-    }
-
     public func urlSession(
         _ session: URLSession,
         dataTask: URLSessionDataTask,
         didReceive data: Data
     ) {
-        if let handler = getConfig(for: dataTask.taskIdentifier)?.progressHandler {
+        if let handler = taskConfigs[dataTask.taskIdentifier]?.progressHandler {
             handler(
                 HTTPProgress(
                     type: .download,
@@ -1163,11 +1154,8 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
                 )
             )
         }
-        if var config = getConfig(for: dataTask.taskIdentifier)?.data {
-            config.append(data)
-            taskConfigLock.lock()
-            taskConfigs[dataTask.taskIdentifier]?.data = config
-            taskConfigLock.unlock()
+        if taskConfigs[dataTask.taskIdentifier]?.data != nil {
+            taskConfigs[dataTask.taskIdentifier]?.data.append(data)
         }
     }
 
@@ -1176,7 +1164,7 @@ extension HTTP: URLSessionTaskDelegate, URLSessionDataDelegate {
         task: URLSessionTask,
         didCompleteWithError error: Error?
     ) {
-        if let config = getConfig(for: task.taskIdentifier),
+        if let config = taskConfigs[task.taskIdentifier],
            let handler = config.completionHandler
         {
             let result = HTTPResult(
