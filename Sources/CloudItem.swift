@@ -55,7 +55,7 @@ public class CloudItem: Hashable {
 
     public static func == (lhs: CloudItem, rhs: CloudItem) -> Bool {
         lhs.name == rhs.name &&
-//            lhs.path == rhs.path &&
+            lhs.path == rhs.path &&
             lhs.id == rhs.id &&
             lhs.isDirectory == rhs.isDirectory
     }
@@ -63,7 +63,7 @@ public class CloudItem: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(name)
-//        hasher.combine(path)
+        hasher.combine(path)
         hasher.combine(isDirectory)
     }
 

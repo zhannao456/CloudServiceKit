@@ -366,6 +366,9 @@ public extension AliyunDriveServiceProvider {
             item.modificationDate = ISO3601DateFormatter.shared.date(from: updatedAt)
         }
         item.size = (json["size"] as? Int64) ?? -1
+        if let hash = json["content_hash"] as? String {
+            item.fileHash = hash
+        }
         return item
     }
 
