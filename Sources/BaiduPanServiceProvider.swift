@@ -86,7 +86,11 @@ public class BaiduPanServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directory: The directory to be listed.
     ///   - completion: Completion block.
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         let url = apiURL.appendingPathComponent("xpan/file")
         var params: [String: Any] = [:]
         params["method"] = "list"
@@ -99,7 +103,7 @@ public class BaiduPanServiceProvider: CloudServiceProvider {
             case let .success(result):
                 if let json = result.json as? [String: Any], let list = json["list"] as? [[String: Any]] {
                     let items = list.compactMap { BaiduPanServiceProvider.cloudItemFromJSON($0) }
-                    completion(.success(items))
+                    completion(.success(("none", items)))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
@@ -695,11 +699,15 @@ extension BaiduPanServiceProvider {
         }
     }
 
-    public func getMediaItems(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func getMediaItems(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
 
         var items: [CloudItem] = []
 
-        func loadList(cursor: Int?, hasMore: Bool = false) {
+        func loadList(cursor: Int?) {
             let url = apiURL.appendingPathComponent("xpan/multimedia")
             var params: [String: Any] = [:]
             params["method"] = "listall"
@@ -709,7 +717,7 @@ extension BaiduPanServiceProvider {
             params["start"] = 0
             params["limit"] = 1000
             params["access_token"] = credential?.password ?? ""
-            if hasMore {
+            if let cursor = cursor {
                 params["start"] = cursor
             }
 
@@ -719,11 +727,12 @@ extension BaiduPanServiceProvider {
                     if let json = result.json as? [String: Any], let list = json["list"] as? [[String: Any]] {
                         let files = list.compactMap { BaiduPanServiceProvider.cloudItemFromJSON($0) }
                         items.append(contentsOf: files)
-                        if let hasMore = json["has_more"] as? Int, hasMore == 1 {
-                            let cursor = json["cursor"] as? Int
-                            loadList(cursor: cursor, hasMore: true)
+                        if let hasMore = json["has_more"] as? Int, hasMore == 1,
+                           let cursor = json["cursor"] as? Int
+                        {
+                            completion(.success((String(cursor), items)))
                         } else {
-                            completion(.success(items))
+                            completion(.success(("none", items)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -734,7 +743,7 @@ extension BaiduPanServiceProvider {
             }
         }
 
-        loadList(cursor: 0, hasMore: false)
+        loadList(cursor: 0)
     }
 }
 

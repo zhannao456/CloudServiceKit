@@ -54,7 +54,11 @@ public class Drive123ServiceProvider: CloudServiceProvider {
         }
     }
 
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
 
         var items: [CloudItem] = []
 
@@ -76,10 +80,16 @@ public class Drive123ServiceProvider: CloudServiceProvider {
                         files.forEach { $0.fixPath(with: directory) }
                         items.append(contentsOf: files)
 
-                        if let lastFileId = object["lastFileId"] as? Int {
-                            loadList(lastFileId: lastFileId)
+//                        if let lastFileId = data["lastFileId"] as? Int {
+//                            loadList(lastFileId: lastFileId)
+//                        } else {
+//                            completion(.success(items))
+//                        }
+                        if let lastFileId = data["lastFileId"] as? Int, lastFileId != -1 {
+                            completion(.success((String(lastFileId), items)))
+
                         } else {
-                            completion(.success(items))
+                            completion(.success(("none", items)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -89,8 +99,11 @@ public class Drive123ServiceProvider: CloudServiceProvider {
                 }
             }
         }
-
-        loadList(lastFileId: nil)
+        if let nextMark = nextMark, let nextMarkInt = Int(nextMark) {
+            loadList(lastFileId: nextMarkInt)
+        } else {
+            loadList(lastFileId: nil)
+        }
     }
 
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {

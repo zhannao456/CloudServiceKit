@@ -33,8 +33,11 @@ public class Drive115ServiceProvider: CloudServiceProvider {
         completion(.success(item))
     }
 
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
-
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         var items: [CloudItem] = []
 
         func loadList(offset: Int?) {
@@ -58,9 +61,9 @@ public class Drive115ServiceProvider: CloudServiceProvider {
                         items.append(contentsOf: files)
 
                         if let offset = object["offset"] as? Int, offset > 0 {
-                            loadList(offset: offset)
+                            completion(.success((String(offset), items)))
                         } else {
-                            completion(.success(items))
+                            completion(.success(("none", items)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -70,8 +73,11 @@ public class Drive115ServiceProvider: CloudServiceProvider {
                 }
             }
         }
-
-        loadList(offset: nil)
+        if let nextMark = nextMark, let intMarker = Int(nextMark) {
+            loadList(offset: intMarker)
+        } else {
+            loadList(offset: nil)
+        }
     }
 
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {

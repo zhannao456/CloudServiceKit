@@ -101,7 +101,11 @@ public protocol CloudServiceProvider: AnyObject, CloudServiceResponseProcessing 
     /// - Parameters:
     ///   - directory: The target directory to load.
     ///   - completion: Completion callback.
-    func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void)
+    func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String?,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    )
 
     /// Copy item to directory
     /// - Parameters:

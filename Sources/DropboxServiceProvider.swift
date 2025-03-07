@@ -40,25 +40,64 @@ public class DropboxServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directory: The target directory.
     ///   - completion: Completion block.
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
-        let url = apiURL.appendingPathComponent("files/list_folder")
-        var json: [String: Any] = [:]
-        json["path"] = directory.path
-        json["recursive"] = false
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
+        var items: [CloudItem] = []
 
-        post(url: url, json: json) { response in
-            switch response.result {
-            case let .success(result):
-                if let jsonObject = result.json as? [String: Any], let list = jsonObject["entries"] as? [[String: Any]] {
-                    let items = list.compactMap { DropboxServiceProvider.cloudItemFromJSON($0) }
-                    completion(.success(items))
-                } else {
-                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+        func load(next_marker: String?) {
+            if let next_marker = next_marker {
+                let url = apiURL.appendingPathComponent("files/list_folder/continue")
+                var json: [String: Any] = [:]
+                json["cursor"] = next_marker
+                post(url: url, json: json) { response in
+                    switch response.result {
+                    case let .success(result):
+                        if let jsonObject = result.json as? [String: Any], let list = jsonObject["entries"] as? [[String: Any]] {
+                            let items = list.compactMap { DropboxServiceProvider.cloudItemFromJSON($0) }
+                            if let hasMore = jsonObject["has_more"] as? Bool,
+                               let cursor = jsonObject["cursor"] as? String, hasMore
+                            {
+                                completion(.success((cursor, items)))
+                            } else {
+                                completion(.success(("none", items)))
+                            }
+                        } else {
+                            completion(.failure(CloudServiceError.responseDecodeError(result)))
+                        }
+                    case let .failure(error):
+                        completion(.failure(error))
+                    }
                 }
-            case let .failure(error):
-                completion(.failure(error))
+            } else {
+                let url = apiURL.appendingPathComponent("files/list_folder")
+                var json: [String: Any] = [:]
+                json["path"] = directory.path
+                json["recursive"] = false
+                post(url: url, json: json) { response in
+                    switch response.result {
+                    case let .success(result):
+                        if let jsonObject = result.json as? [String: Any], let list = jsonObject["entries"] as? [[String: Any]] {
+                            let items = list.compactMap { DropboxServiceProvider.cloudItemFromJSON($0) }
+                            if let hasMore = jsonObject["has_more"] as? Bool,
+                               let cursor = jsonObject["cursor"] as? String, hasMore
+                            {
+                                completion(.success((cursor, items)))
+                            } else {
+                                completion(.success(("none", items)))
+                            }
+                        } else {
+                            completion(.failure(CloudServiceError.responseDecodeError(result)))
+                        }
+                    case let .failure(error):
+                        completion(.failure(error))
+                    }
+                }
             }
         }
+        load(next_marker: nextMark)
     }
 
     /// Get metadata for a file or folder.

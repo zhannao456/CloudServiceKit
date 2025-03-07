@@ -111,7 +111,11 @@ public class OneDriveServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directory: The target directory to load.
     ///   - completion: Completion callback.
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
 
         var items: [CloudItem] = []
 
@@ -133,10 +137,15 @@ public class OneDriveServiceProvider: CloudServiceProvider {
                     if let json = result.json as? [String: Any], let files = json["value"] as? [[String: Any]] {
                         items.append(contentsOf: files.compactMap { OneDriveServiceProvider.cloudItemFromJSON($0) })
 
+//                        if let nextLink = json["@odata.nextLink"] as? String, !nextLink.isEmpty {
+//                            load(nextLink: nextLink)
+//                        } else {
+//                            completion(.success(items))
+//                        }
                         if let nextLink = json["@odata.nextLink"] as? String, !nextLink.isEmpty {
-                            load(nextLink: nextLink)
+                            completion(.success((nextLink, items)))
                         } else {
-                            completion(.success(items))
+                            completion(.success(("none", items)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -147,7 +156,7 @@ public class OneDriveServiceProvider: CloudServiceProvider {
             }
         }
 
-        load(nextLink: nil)
+        load(nextLink: nextMark)
     }
 
     /// Asynchronously creates a copy of an driveItem (including any children), under a new parent item or with a new name.

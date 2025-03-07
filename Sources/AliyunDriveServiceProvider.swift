@@ -52,7 +52,11 @@ public class AliyunDriveServiceProvider: CloudServiceProvider {
         }
     }
 
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         var items: [CloudItem] = []
 
         func loadList(marker: String?) {
@@ -78,10 +82,16 @@ public class AliyunDriveServiceProvider: CloudServiceProvider {
                         files.forEach { $0.fixPath(with: directory) }
                         items.append(contentsOf: files)
 
+//                        if let nextMarker = object["next_marker"] as? String, !nextMarker.isEmpty {
+//                            loadList(marker: nextMarker)
+//                        } else {
+//                            completion(.success(items))
+//                        }
                         if let nextMarker = object["next_marker"] as? String, !nextMarker.isEmpty {
-                            loadList(marker: nextMarker)
+                            completion(.success((nextMarker, items)))
+
                         } else {
-                            completion(.success(items))
+                            completion(.success(("none", items)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -92,7 +102,7 @@ public class AliyunDriveServiceProvider: CloudServiceProvider {
             }
         }
 
-        loadList(marker: nil)
+        loadList(marker: nextMark)
     }
 
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {

@@ -70,7 +70,11 @@ public class PCloudServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directoryItem: The target directory.
     ///   - completion: Completion block.
-    public func contentsOfDirectory(_ directoryItem: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directoryItem: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         let url = apiURL.appendingPathComponent("listfolder")
         let data = ["folderid": directoryItem.id]
         post(url: url, data: data) { response in
@@ -86,7 +90,7 @@ public class PCloudServiceProvider: CloudServiceProvider {
                             item.path = [directoryItem.path, item.path].joined(separator: "/")
                         }
                     }
-                    completion(.success(items))
+                    completion(.success(("none", items)))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }

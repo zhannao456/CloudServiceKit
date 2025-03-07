@@ -70,7 +70,11 @@ public class PremiumizeServiceProvider: CloudServiceProvider {
         }
     }
 
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         var items: [CloudItem] = []
 
         var json: [String: Any] = [:]
@@ -90,7 +94,7 @@ public class PremiumizeServiceProvider: CloudServiceProvider {
                     files.forEach { $0.fixPath(with: directory) }
                     items.append(contentsOf: files)
 
-                    completion(.success(items))
+                    completion(.success(("none", items)))
                 } else {
                     completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }

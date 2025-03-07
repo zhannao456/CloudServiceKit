@@ -63,24 +63,49 @@ public class BoxServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directory: The target directory to load.
     ///   - completion: Completion callback.
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
-        let url = apiURL.appendingPathComponent("folders/\(directory.id)/items")
-        var params: [String: Any] = [:]
-        params["fields"] = "id,type,name,size,created_at,modified_at,sha1"
-        get(url: url, params: params) { response in
-            switch response.result {
-            case let .success(result):
-                if let json = result.json as? [String: Any], let entries = json["entries"] as? [[String: Any]] {
-                    let items = entries.compactMap { BoxServiceProvider.cloudItemFromJSON($0) }
-                    items.forEach { $0.fixPath(with: directory) }
-                    completion(.success(items))
-                } else {
-                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
+
+        var items: [CloudItem] = []
+
+        func load(next_marker: String?) {
+            let url = apiURL.appendingPathComponent("folders/\(directory.id)/items")
+            var params: [String: Any] = [:]
+            params["fields"] = "id,type,name,size,created_at,modified_at,sha1"
+            params["usemarker"] = true
+            if let next_marker = next_marker {
+                params["marker"] = next_marker
+            }
+            get(url: url, params: params) { response in
+                switch response.result {
+                case let .success(result):
+                    if let json = result.json as? [String: Any],
+                       let entries = json["entries"] as? [[String: Any]]
+                    {
+                        let items = entries.compactMap { BoxServiceProvider.cloudItemFromJSON($0) }
+                        items.forEach { $0.fixPath(with: directory) }
+                        if let totalCount = json["total_count"] as? Int,
+                           let nextMarker = json["next_marker"] as? String,
+                           entries.count < totalCount
+                        {
+                            completion(.success((nextMarker, items)))
+                        } else {
+                            completion(.success(("none", items)))
+                        }
+
+                    } else {
+                        completion(.failure(CloudServiceError.responseDecodeError(result)))
+                    }
+                case let .failure(error):
+                    completion(.failure(error))
                 }
-            case let .failure(error):
-                completion(.failure(error))
             }
         }
+
+        load(next_marker: nextMark)
     }
 
     /// Copy item to directory

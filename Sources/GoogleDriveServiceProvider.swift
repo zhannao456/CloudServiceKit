@@ -82,7 +82,11 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
     /// - Parameters:
     ///   - directory: The target directory to load.
     ///   - completion: Completion callback.
-    public func contentsOfDirectory(_ directory: CloudItem, completion: @escaping (Result<[CloudItem], Error>) -> Void) {
+    public func contentsOfDirectory(
+        _ directory: CloudItem,
+        nextMark: String? = nil,
+        completion: @escaping (Result<(String, [CloudItem]), Error>) -> Void
+    ) {
         let url = apiURL.appendingPathComponent("files")
         var contents: [CloudItem] = []
         func fetch(pageToken: String? = nil) {
@@ -112,10 +116,16 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
                         let items = files.compactMap { GoogleDriveServiceProvider.cloudItemFromJSON($0) }
                         items.forEach { $0.fixPath(with: directory) }
                         contents.append(contentsOf: items)
+//                        if let nextPageToken = json["nextPageToken"] as? String, !nextPageToken.isEmpty {
+//                            fetch(pageToken: nextPageToken)
+//                        } else {
+//                            completion(.success(contents))
+//                        }
                         if let nextPageToken = json["nextPageToken"] as? String, !nextPageToken.isEmpty {
-                            fetch(pageToken: nextPageToken)
+                            completion(.success((nextPageToken, contents)))
+
                         } else {
-                            completion(.success(contents))
+                            completion(.success(("none", contents)))
                         }
                     } else {
                         completion(.failure(CloudServiceError.responseDecodeError(result)))
@@ -126,7 +136,7 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
             }
         }
 
-        fetch(pageToken: nil)
+        fetch(pageToken: nextMark)
     }
 
     /// Creates a copy of a file.
