@@ -62,47 +62,40 @@ public class Drive123ServiceProvider: CloudServiceProvider {
 
         var items: [CloudItem] = []
 
-        func loadList(lastFileId: Int?) {
-            var json: [String: Any] = [:]
-            json["limit"] = 100
-            json["parentFileId"] = directory.id
-            if let lastFileId = lastFileId {
-                json["lastFileId"] = lastFileId
-            }
-            let url = apiURL.appendingPathComponent("/api/v2/file/list")
-            get(url: url, params: json, headers: headers) { response in
-                switch response.result {
-                case let .success(result):
-                    if let object = result.json as? [String: Any], let data = object["data"] as? [String: Any],
-                       let list = data["fileList"] as? [[String: Any]]
-                    {
-                        let files = list.compactMap { Self.cloudItemFromJSON($0) }
-                        files.forEach { $0.fixPath(with: directory) }
-                        items.append(contentsOf: files)
+        var json: [String: Any] = [:]
+        json["limit"] = 100
+        json["parentFileId"] = directory.id
+        if let nextMark = nextMark, let nextMarkInt = Int(nextMark) {
+            json["lastFileId"] = nextMarkInt
+        }
+        let url = apiURL.appendingPathComponent("/api/v2/file/list")
+        get(url: url, params: json, headers: headers) { response in
+            switch response.result {
+            case let .success(result):
+                if let object = result.json as? [String: Any], let data = object["data"] as? [String: Any],
+                   let list = data["fileList"] as? [[String: Any]]
+                {
+                    let files = list.compactMap { Self.cloudItemFromJSON($0) }
+                    files.forEach { $0.fixPath(with: directory) }
+                    items.append(contentsOf: files)
 
 //                        if let lastFileId = data["lastFileId"] as? Int {
 //                            loadList(lastFileId: lastFileId)
 //                        } else {
 //                            completion(.success(items))
 //                        }
-                        if let lastFileId = data["lastFileId"] as? Int, lastFileId != -1 {
-                            completion(.success((String(lastFileId), items)))
+                    if let lastFileId = data["lastFileId"] as? Int, lastFileId != -1 {
+                        completion(.success((String(lastFileId), items)))
 
-                        } else {
-                            completion(.success(("none", items)))
-                        }
                     } else {
-                        completion(.failure(CloudServiceError.responseDecodeError(result)))
+                        completion(.success(("none", items)))
                     }
-                case let .failure(error):
-                    completion(.failure(error))
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
+            case let .failure(error):
+                completion(.failure(error))
             }
-        }
-        if let nextMark = nextMark, let nextMarkInt = Int(nextMark) {
-            loadList(lastFileId: nextMarkInt)
-        } else {
-            loadList(lastFileId: nil)
         }
     }
 

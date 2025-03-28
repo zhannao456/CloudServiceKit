@@ -40,43 +40,36 @@ public class Drive115ServiceProvider: CloudServiceProvider {
     ) {
         var items: [CloudItem] = []
 
-        func loadList(offset: Int?) {
-            var params: [String: Any] = [:]
-            params["limit"] = 100
-            params["asc"] = "1"
-            params["cid"] = directory.id
-            params["show_dir"] = 1
-            if let offset = offset {
-                params["offset"] = offset
-            }
-            let url = apiURL.appendingPathComponent("/open/ufile/files")
-            get(url: url, params: params) { response in
-                switch response.result {
-                case let .success(result):
-                    if let object = result.json as? [String: Any],
-                       let list = object["data"] as? [[String: Any]]
-                    {
-                        let files = list.compactMap { Self.cloudItemFromJSON($0) }
-                        files.forEach { $0.fixPath(with: directory) }
-                        items.append(contentsOf: files)
-
-                        if let offset = object["offset"] as? Int, offset > 0 {
-                            completion(.success((String(offset), items)))
-                        } else {
-                            completion(.success(("none", items)))
-                        }
-                    } else {
-                        completion(.failure(CloudServiceError.responseDecodeError(result)))
-                    }
-                case let .failure(error):
-                    completion(.failure(error))
-                }
-            }
-        }
+        var params: [String: Any] = [:]
+        params["limit"] = 100
+        params["asc"] = "1"
+        params["cid"] = directory.id
+        params["show_dir"] = 1
         if let nextMark = nextMark, let intMarker = Int(nextMark) {
-            loadList(offset: intMarker)
-        } else {
-            loadList(offset: nil)
+            params["offset"] = intMarker
+        }
+        let url = apiURL.appendingPathComponent("/open/ufile/files")
+        get(url: url, params: params) { response in
+            switch response.result {
+            case let .success(result):
+                if let object = result.json as? [String: Any],
+                   let list = object["data"] as? [[String: Any]]
+                {
+                    let files = list.compactMap { Self.cloudItemFromJSON($0) }
+                    files.forEach { $0.fixPath(with: directory) }
+                    items.append(contentsOf: files)
+
+                    if let offset = object["offset"] as? Int, offset > 0 {
+                        completion(.success((String(offset), items)))
+                    } else {
+                        completion(.success(("none", items)))
+                    }
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+                }
+            case let .failure(error):
+                completion(.failure(error))
+            }
         }
     }
 

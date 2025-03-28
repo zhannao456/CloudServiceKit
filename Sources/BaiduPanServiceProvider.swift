@@ -707,43 +707,39 @@ extension BaiduPanServiceProvider {
 
         var items: [CloudItem] = []
 
-        func loadList(cursor: Int?) {
-            let url = apiURL.appendingPathComponent("xpan/multimedia")
-            var params: [String: Any] = [:]
-            params["method"] = "listall"
-            params["path"] = directory.path
-            params["web"] = 1
-            params["recursion"] = 0
-            params["start"] = 0
-            params["limit"] = 1000
-            params["access_token"] = credential?.password ?? ""
-            if let cursor = cursor {
-                params["start"] = cursor
-            }
-
-            get(url: url, params: params) { response in
-                switch response.result {
-                case let .success(result):
-                    if let json = result.json as? [String: Any], let list = json["list"] as? [[String: Any]] {
-                        let files = list.compactMap { BaiduPanServiceProvider.cloudItemFromJSON($0) }
-                        items.append(contentsOf: files)
-                        if let hasMore = json["has_more"] as? Int, hasMore == 1,
-                           let cursor = json["cursor"] as? Int
-                        {
-                            completion(.success((String(cursor), items)))
-                        } else {
-                            completion(.success(("none", items)))
-                        }
-                    } else {
-                        completion(.failure(CloudServiceError.responseDecodeError(result)))
-                    }
-                case let .failure(error):
-                    completion(.failure(error))
-                }
-            }
+        let url = apiURL.appendingPathComponent("xpan/multimedia")
+        var params: [String: Any] = [:]
+        params["method"] = "listall"
+        params["path"] = directory.path
+        params["web"] = 1
+        params["recursion"] = 0
+        params["start"] = 0
+        params["limit"] = 1000
+        params["access_token"] = credential?.password ?? ""
+        if let nextMark = nextMark, let cursor = Int(nextMark) {
+            params["start"] = cursor
         }
 
-        loadList(cursor: 0)
+        get(url: url, params: params) { response in
+            switch response.result {
+            case let .success(result):
+                if let json = result.json as? [String: Any], let list = json["list"] as? [[String: Any]] {
+                    let files = list.compactMap { BaiduPanServiceProvider.cloudItemFromJSON($0) }
+                    items.append(contentsOf: files)
+                    if let hasMore = json["has_more"] as? Int, hasMore == 1,
+                       let cursor = json["cursor"] as? Int
+                    {
+                        completion(.success((String(cursor), items)))
+                    } else {
+                        completion(.success(("none", items)))
+                    }
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
+                }
+            case let .failure(error):
+                completion(.failure(error))
+            }
+        }
     }
 }
 

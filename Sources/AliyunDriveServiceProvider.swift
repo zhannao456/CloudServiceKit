@@ -59,50 +59,41 @@ public class AliyunDriveServiceProvider: CloudServiceProvider {
     ) {
         var items: [CloudItem] = []
 
-        func loadList(marker: String?) {
-            var json: [String: Any] = [:]
-            json["all"] = false
-            json["drive_id"] = driveId
-            json["fields"] = "*"
-            json["limit"] = 100
-            json["order_by"] = "updated_at"
-            json["order_direction"] = "DESC"
-            json["parent_file_id"] = directory.id
-            if let marker = marker {
-                json["marker"] = marker
-            }
-            let url = apiURL.appendingPathComponent("/adrive/v1.0/openFile/list")
-            post(url: url, json: json) { response in
-                switch response.result {
-                case let .success(result):
-                    if let object = result.json as? [String: Any],
-                       let list = object["items"] as? [[String: Any]]
-                    {
-                        let files = list.compactMap { Self.cloudItemFromJSON($0) }
-                        files.forEach { $0.fixPath(with: directory) }
-                        items.append(contentsOf: files)
+        var json: [String: Any] = [:]
+        json["all"] = false
+        json["drive_id"] = driveId
+        json["fields"] = "*"
+        json["limit"] = 100
+        json["order_by"] = "updated_at"
+        json["order_direction"] = "DESC"
+        json["parent_file_id"] = directory.id
+        if let marker = nextMark {
+            json["marker"] = marker
+        }
+        let url = apiURL.appendingPathComponent("/adrive/v1.0/openFile/list")
+        post(url: url, json: json) { response in
+            switch response.result {
+            case let .success(result):
+                if let object = result.json as? [String: Any],
+                   let list = object["items"] as? [[String: Any]]
+                {
+                    let files = list.compactMap { Self.cloudItemFromJSON($0) }
+                    files.forEach { $0.fixPath(with: directory) }
+                    items.append(contentsOf: files)
 
-//                        if let nextMarker = object["next_marker"] as? String, !nextMarker.isEmpty {
-//                            loadList(marker: nextMarker)
-//                        } else {
-//                            completion(.success(items))
-//                        }
-                        if let nextMarker = object["next_marker"] as? String, !nextMarker.isEmpty {
-                            completion(.success((nextMarker, items)))
+                    if let nextMarker = object["next_marker"] as? String, !nextMarker.isEmpty {
+                        completion(.success((nextMarker, items)))
 
-                        } else {
-                            completion(.success(("none", items)))
-                        }
                     } else {
-                        completion(.failure(CloudServiceError.responseDecodeError(result)))
+                        completion(.success(("none", items)))
                     }
-                case let .failure(error):
-                    completion(.failure(error))
+                } else {
+                    completion(.failure(CloudServiceError.responseDecodeError(result)))
                 }
+            case let .failure(error):
+                completion(.failure(error))
             }
         }
-
-        loadList(marker: nextMark)
     }
 
     public func copyItem(_ item: CloudItem, to directory: CloudItem, completion: @escaping CloudCompletionHandler) {
