@@ -762,3 +762,19 @@ extension BaiduPanServiceProvider {
         let directory: CloudItem
     }
 }
+
+public extension BaiduPanServiceProvider {
+
+    func getCurrentUserAsync() async throws -> CloudUser? {
+        try await withCheckedThrowingContinuation { continuation in
+            getCurrentUserInfo { userResult in
+                switch userResult {
+                case let .success(user):
+                    continuation.resume(returning: user)
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+}

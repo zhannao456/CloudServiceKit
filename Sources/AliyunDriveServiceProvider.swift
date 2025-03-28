@@ -722,3 +722,32 @@ extension AliyunDriveServiceProvider {
         public let videoPreviewPlayInfo: PreviewInfo
     }
 }
+
+public extension AliyunDriveServiceProvider {
+
+    func getCurrentUserAsync() async throws -> CloudUser? {
+        try await withCheckedThrowingContinuation { continuation in
+            getCurrentUserInfo { userResult in
+                switch userResult {
+                case let .success(user):
+                    continuation.resume(returning: user)
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func getDriveInfo() async throws -> AliyunDriveInfo? {
+        try await withCheckedThrowingContinuation { continuation in
+            getDriveInfo { driveInfo in
+                switch driveInfo {
+                case let .success(driveInfo):
+                    continuation.resume(returning: driveInfo)
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+}

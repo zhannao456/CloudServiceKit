@@ -210,16 +210,110 @@ extension CloudServiceConnector: CloudServiceProviderDelegate {
 public class AliyunDriveConnector: CloudServiceConnector {
 
     override public var authorizeUrl: String {
-        "https://open.aliyundrive.com/oauth/authorize"
+        "https://openapi.alipan.com/oauth/authorize"
     }
 
     override public var accessTokenUrl: String {
-        "https://open.aliyundrive.com/oauth/access_token"
+        "https://openapi.alipan.com/oauth/access_token"
     }
 
     override public var scope: String {
         get { "user:base,file:all:read,file:all:write" }
         set {}
+    }
+
+    public var headers: [String: String] {
+        ["Content-Type": "application/json"]
+    }
+
+    public func fetchAuthQRCode() async throws -> QRCode {
+        try await withCheckedThrowingContinuation { continuation in
+
+            let url = "https://openapi.alipan.com/oauth/authorize/qrcode"
+            var data = [String: Any]()
+            data["client_id"] = appId
+            data["client_secret"] = appSecret
+            data["scopes"] = ["user:base", "file:all:read", "file:all:write"]
+
+            Just.post(url, data: data, headers: headers, asyncCompletionHandler: { result in
+                DispatchQueue.main.async {
+                    if let error = result.error {
+                        continuation.resume(throwing: error)
+                    } else if let json = result.json as? [String: Any],
+                              let qrCodeUrl = json["qrCodeUrl"] as? String,
+                              let sid = json["sid"] as? String
+                    {
+                        continuation.resume(returning: QRCode(uid: sid, qrcode: qrCodeUrl, sign: sid, time: -1))
+                    } else {
+                        continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                    }
+                }
+            })
+        }
+    }
+
+    public func refreshAuthStatus(sid: String) async throws -> AuthStatus {
+        try await withCheckedThrowingContinuation { continuation in
+            let url = "https://openapi.alipan.com/oauth/qrcode/\(sid)/status"
+
+            Just.get(url, headers: headers, asyncCompletionHandler: { result in
+                DispatchQueue.main.async {
+                    if let error = result.error {
+                        continuation.resume(throwing: error)
+                    } else if let json = result.json as? [String: Any],
+                              let status = json["status"] as? String
+                    {
+                        var code: Int = -1
+                        switch status {
+                        case "WaitLogin":
+                            code = 0
+                        case "ScanSuccess":
+                            code = 1
+                        case "LoginSuccess":
+                            code = 2
+                        case "QRCodeExpired":
+                            code = -1
+                        default:
+                            code = 0
+                        }
+                        if json.keys.contains("authCode"), let authCode = json["authCode"] as? String {
+                            continuation.resume(returning: AuthStatus(status: code, msg: authCode))
+                        } else {
+                            continuation.resume(returning: AuthStatus(status: code, msg: ""))
+                        }
+                    } else {
+                        continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                    }
+                }
+            })
+        }
+    }
+
+    public func getAccessToken(authCode: String) async throws -> AccessTokenPayload {
+        try await withCheckedThrowingContinuation { continuation in
+            let url = "https://openapi.alipan.com/oauth/access_token"
+            var data = [String: Any]()
+            data["client_id"] = appId
+            data["client_secret"] = appSecret
+            data["grant_type"] = "authorization_code"
+            data["code"] = authCode
+            Just.post(url, data: data, headers: headers, asyncCompletionHandler: { result in
+                DispatchQueue.main.async {
+                    if let error = result.error {
+                        continuation.resume(throwing: error)
+                    } else if let json = result.json as? [String: Any],
+                              let accessToken = json["access_token"] as? String,
+                              let refreshToken = json["refresh_token"] as? String,
+                              let expires = json["expires_in"] as? Int
+                    {
+                        let payload = AccessTokenPayload(accessToken: accessToken, refreshToken: refreshToken, expiresIn: expires)
+                        continuation.resume(returning: payload)
+                    } else {
+                        continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                    }
+                }
+            })
+        }
     }
 }
 
@@ -245,6 +339,69 @@ public class BaiduPanConnector: CloudServiceConnector {
     override public var scope: String {
         get { "basic,netdisk" }
         set {}
+    }
+
+    public var headers: [String: String] {
+        ["User-Agent": "pan.baidu.com"]
+    }
+
+    public func fetchAuthQRCode() async throws -> QRCode {
+        try await withCheckedThrowingContinuation { continuation in
+
+            let url = "https://openapi.baidu.com/oauth/2.0/device/code?response_type=device_code&client_id=\(appId)&scope=basic,netdisk"
+
+            Just.get(url, headers: headers, asyncCompletionHandler: { result in
+                DispatchQueue.main.async {
+                    if let error = result.error {
+                        continuation.resume(throwing: error)
+                    } else if let json = result.json as? [String: Any],
+                              let qrCodeUrl = json["qrcode_url"] as? String,
+                              let deviceCode = json["device_code"] as? String,
+                              let expiresIn = json["expires_in"] as? Int64
+                    {
+                        continuation.resume(returning: QRCode(uid: deviceCode, qrcode: qrCodeUrl, sign: "", time: expiresIn))
+                    } else {
+                        continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                    }
+                }
+            })
+        }
+    }
+
+    public func getAccessToken(authCode: String) async throws -> AccessTokenPayload? {
+        try await withCheckedThrowingContinuation { continuation in
+            let url =
+                "https://openapi.baidu.com/oauth/2.0/token?grant_type=device_token&code=\(authCode)&client_id=\(appId)&client_secret=\(appSecret)"
+
+            Just.get(url, headers: headers, asyncCompletionHandler: { result in
+                DispatchQueue.main.async {
+                    if let error = result.error {
+                        continuation.resume(throwing: error)
+                    } else if let json = result.json as? [String: Any] {
+                        if let accessToken = json["access_token"] as? String,
+                           let refreshToken = json["refresh_token"] as? String,
+                           let expires = json["expires_in"] as? Int
+                        {
+                            let payload = AccessTokenPayload(accessToken: accessToken, refreshToken: refreshToken, expiresIn: expires)
+                            continuation.resume(returning: payload)
+                        } else {
+                            if let error = json["error"] as? String {
+                                if error == "authorization_pending" {
+                                    continuation.resume(returning: nil)
+                                } else {
+                                    continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                                }
+                            } else {
+                                continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                            }
+                        }
+
+                    } else {
+                        continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                    }
+                }
+            })
+        }
     }
 }
 
@@ -353,6 +510,24 @@ public class PremiumizeConnector: CloudServiceConnector {
     }
 }
 
+public struct QRCode {
+    public let uid: String
+    public let qrcode: String
+    public let sign: String
+    public let time: Int64
+}
+
+public struct AuthStatus {
+    public let status: Int
+    public let msg: String?
+}
+
+public struct AccessTokenPayload {
+    public let accessToken: String
+    public let refreshToken: String
+    public let expiresIn: Int
+}
+
 // MARK: - Drive115Connector
 
 public class Drive115Connector: CloudServiceConnector {
@@ -368,13 +543,6 @@ public class Drive115Connector: CloudServiceConnector {
     override public func renewToken(with refreshToken: String, completion: @escaping (Result<OAuthSwift.TokenSuccess, Error>) -> Void) {
         // pCloud OAuth does not respond with a refresh token, so renewToken is unsupported.
         completion(.failure(CloudServiceError.unsupported))
-    }
-
-    public struct QRCode {
-        public let uid: String
-        public let qrcode: String
-        public let sign: String
-        public let time: Int64
     }
 
     public var codeVerifier: String?
@@ -415,11 +583,6 @@ public class Drive115Connector: CloudServiceConnector {
         }
     }
 
-    public struct AuthStatus {
-        public let status: Int
-        public let msg: String?
-    }
-
     public func refreshAuthStatus(uid: String, time: Int64, sign: String) async throws -> AuthStatus {
         try await withCheckedThrowingContinuation { continuation in
             let url = "https://qrcodeapi.115.com/get/status/"
@@ -434,7 +597,8 @@ public class Drive115Connector: CloudServiceConnector {
                     if let error = result.error {
                         continuation.resume(throwing: error)
                     } else if let object = result.json as? [String: Any],
-                              let dataObject = object["data"] as? [String: Any], let status = dataObject["status"] as? Int
+                              let dataObject = object["data"] as? [String: Any],
+                              let status = dataObject["status"] as? Int
                     {
                         let msg = dataObject["msg"] as? String
                         continuation.resume(returning: AuthStatus(status: status, msg: msg))
@@ -444,12 +608,6 @@ public class Drive115Connector: CloudServiceConnector {
                 }
             })
         }
-    }
-
-    public struct AccessTokenPayload {
-        public let accessToken: String
-        public let refreshToken: String
-        public let expiresIn: Int
     }
 
     public func getAccessToken(uid: String, codeVerifier: String) async throws -> AccessTokenPayload {
