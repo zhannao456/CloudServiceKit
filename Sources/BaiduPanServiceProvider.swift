@@ -713,11 +713,12 @@ extension BaiduPanServiceProvider {
         params["path"] = directory.path
         params["web"] = 1
         params["recursion"] = 0
-        params["start"] = 0
         params["limit"] = 1000
         params["access_token"] = credential?.password ?? ""
         if let nextMark = nextMark, let cursor = Int(nextMark) {
             params["start"] = cursor
+        } else {
+            params["start"] = 0
         }
 
         get(url: url, params: params) { response in

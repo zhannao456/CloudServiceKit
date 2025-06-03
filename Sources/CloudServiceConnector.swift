@@ -9,8 +9,10 @@
 import CryptoKit
 import Foundation
 import OAuthSwift
+#if canImport(UIKit)
 import class UIKit.UIScreen
 import class UIKit.UIViewController
+#endif
 
 public protocol CloudServiceOAuth {
 
@@ -78,6 +80,7 @@ public class CloudServiceConnector: CloudServiceOAuth {
         self.state = state
     }
 
+    #if canImport(UIKit)
     public func connect(
         viewController: UIViewController,
         completion: @escaping (Result<OAuthSwift.TokenSuccess, Error>) -> Void
@@ -165,6 +168,7 @@ public class CloudServiceConnector: CloudServiceOAuth {
             }
         )
     }
+    #endif
 
     public func renewToken(with refreshToken: String, completion: @escaping (Result<OAuthSwift.TokenSuccess, Error>) -> Void) {
         let oauth = OAuth2Swift(
@@ -323,11 +327,15 @@ public class BaiduPanConnector: CloudServiceConnector {
 
     /// The OAuth2 url, which is `https://openapi.baidu.com/oauth/2.0/authorize`.
     override public var authorizeUrl: String {
+        #if canImport(UIKit)
         if UIScreen.main.traitCollection.userInterfaceIdiom == .pad {
             return "https://openapi.baidu.com/oauth/2.0/authorize?display=pad&force_login=1"
         } else {
             return "https://openapi.baidu.com/oauth/2.0/authorize?display=mobile&force_login=1"
         }
+        #else
+        return "https://openapi.baidu.com/oauth/2.0/authorize?display=page&force_login=1"
+        #endif
     }
 
     /// The access token url, which is `https://openapi.baidu.com/oauth/2.0/token`.
