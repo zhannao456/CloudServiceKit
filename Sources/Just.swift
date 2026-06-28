@@ -1,4 +1,12 @@
-/// https://github.com/dduan/Just/blob/master/Sources/Just/Just.swift
+//
+// Swiftfin is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, you can obtain one at https://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
+//
+
+// https://github.com/dduan/Just/blob/master/Sources/Just/Just.swift
 import Foundation
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -8,7 +16,7 @@ import FoundationNetworking
 import Dispatch
 #endif
 
-// stolen from python-requests
+/// stolen from python-requests
 let statusCodeDescriptions = [
     // Informational.
     100: "continue",
@@ -91,7 +99,7 @@ public enum HTTPFile {
     case text(String, String, String?) // filename, text, mimetype
 }
 
-// Supported request types
+/// Supported request types
 public enum HTTPMethod: String {
     case delete = "DELETE"
     case get = "GET"
@@ -133,7 +141,10 @@ public final class HTTPResult: NSObject {
     public final var content: Data?
     public var response: URLResponse?
     public var error: Error?
-    public var request: URLRequest? { task?.originalRequest }
+    public var request: URLRequest? {
+        task?.originalRequest
+    }
+
     public var task: URLSessionTask?
     public var encoding = String.Encoding.utf8
     public var JSONReadingOptions = JSONSerialization.ReadingOptions(rawValue: 0)

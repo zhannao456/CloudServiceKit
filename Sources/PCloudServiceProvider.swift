@@ -3,13 +3,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 import OAuthSwift
 
-/*
+/**
  https://docs.pcloud.com/methods/
  */
 public class PCloudServiceProvider: CloudServiceProvider {
@@ -17,10 +17,14 @@ public class PCloudServiceProvider: CloudServiceProvider {
     public var delegate: CloudServiceProviderDelegate?
 
     /// The name of service provider.
-    public var name: String { "pCloud" }
+    public var name: String {
+        "pCloud"
+    }
 
     /// The root folder of pCloud. You can use this property to list root items.
-    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "/") }
+    public var rootItem: CloudItem {
+        CloudItem(id: "0", name: name, path: "/")
+    }
 
     public var credential: URLCredential?
 

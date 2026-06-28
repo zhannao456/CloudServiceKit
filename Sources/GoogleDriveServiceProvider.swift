@@ -3,12 +3,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
-/*
+/**
  A wrapper for Google Drive using OAuth2.
  Documents can be found here:
  https://developers.google.com/drive/api/v3/reference
@@ -18,10 +18,12 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
     public var delegate: CloudServiceProviderDelegate?
 
     /// The name of service provider.
-    public var name: String { "GoogleDrive" }
+    public var name: String {
+        "GoogleDrive"
+    }
 
     /// If not empty, file operation do to target shared drive
-    public var sharedDrive: SharedDrive? = nil
+    public var sharedDrive: SharedDrive?
 
     public var rootItem: CloudItem {
         if let sharedDrive = sharedDrive {
@@ -450,7 +452,7 @@ public class GoogleDriveServiceProvider: CloudServiceProvider {
 
 extension GoogleDriveServiceProvider {
 
-    // https://developers.google.com/drive/api/v3/manage-uploads#send_the_initial_request
+    /// https://developers.google.com/drive/api/v3/manage-uploads#send_the_initial_request
     private func createUploadRequest(
         fileURL: URL,
         directory: CloudItem,
@@ -487,7 +489,7 @@ extension GoogleDriveServiceProvider {
         }
     }
 
-    // https://developers.google.com/drive/api/v3/manage-uploads#uploading
+    /// https://developers.google.com/drive/api/v3/manage-uploads#uploading
     private func uploadFile(
         _ session: UploadSession,
         offset: Int64,
@@ -550,7 +552,7 @@ extension GoogleDriveServiceProvider: CloudServiceResponseProcessing {
         let mimeType = json["mimeType"] as? String
         let isDirectory = mimeType == MIMETypes.folder
         let item = CloudItem(id: id, name: name, path: name, isDirectory: isDirectory, json: json)
-        /// while the size field describe as long in document, but the actually response type is String
+        // while the size field describe as long in document, but the actually response type is String
         if let size = json["size"] as? Int64 {
             item.size = size
         } else if let size = json["size"] as? String {

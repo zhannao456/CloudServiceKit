@@ -3,13 +3,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import CryptoKit
 import Foundation
 
-/*
+/**
  A Wrapper of box Service.
  Developer documents can be found here: https://developer.box.com/reference/
  */
@@ -18,10 +18,14 @@ public class BoxServiceProvider: CloudServiceProvider {
     public var delegate: CloudServiceProviderDelegate?
 
     /// The name of service provider.
-    public var name: String { "Box" }
+    public var name: String {
+        "Box"
+    }
 
     /// The root folder of Box service. You can use this property to list root items.
-    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "/") }
+    public var rootItem: CloudItem {
+        CloudItem(id: "0", name: name, path: "/")
+    }
 
     public var credential: URLCredential?
 

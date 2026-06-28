@@ -3,12 +3,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
-/*
+/**
  https://www.dropbox.com/developers/documentation/http/documentation
  */
 public class DropboxServiceProvider: CloudServiceProvider {
@@ -16,9 +16,13 @@ public class DropboxServiceProvider: CloudServiceProvider {
     public var delegate: CloudServiceProviderDelegate?
 
     /// The name of service provider.
-    public var name: String { "Dropbox" }
+    public var name: String {
+        "Dropbox"
+    }
 
-    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "") }
+    public var rootItem: CloudItem {
+        CloudItem(id: "0", name: name, path: "")
+    }
 
     public var credential: URLCredential?
 

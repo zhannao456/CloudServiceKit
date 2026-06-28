@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import CryptoKit
@@ -17,11 +17,15 @@ public class Drive115ServiceProvider: CloudServiceProvider {
 
     public var refreshAccessTokenHandler: CloudRefreshAccessTokenHandler?
 
-    public var name: String { "115" }
+    public var name: String {
+        "115"
+    }
 
     public var credential: URLCredential?
 
-    public var rootItem: CloudItem { CloudItem(id: "0", name: name, path: "/") }
+    public var rootItem: CloudItem {
+        CloudItem(id: "0", name: name, path: "/")
+    }
 
     public var apiURL = URL(string: "https://proapi.115.com")!
 
@@ -262,8 +266,7 @@ public class Drive115ServiceProvider: CloudServiceProvider {
 
     public func thumbnailRequest(item: CloudItem) async throws -> URLRequest {
         if let thumb = item.json["thumb"] as? String, let url = URL(string: thumb) {
-            var request = URLRequest(url: url)
-            return request
+            return URLRequest(url: url)
         } else {
             throw CloudServiceError.unsupported
         }

@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
@@ -30,7 +30,7 @@ public typealias CloudCompletionHandler = (CloudResponse<HTTPResult, Error>) -> 
 /// Cloud refresh acess token handler.
 public typealias CloudRefreshAccessTokenHandler = (((Result<URLCredential, Error>) -> Void)?) -> Void
 
-// CloudServiceResponseProcessing
+/// CloudServiceResponseProcessing
 public protocol CloudServiceResponseProcessing {
 
     /// Parse `CloudItem` from JSON.
@@ -185,7 +185,7 @@ public protocol CloudServiceProvider: AnyObject, CloudServiceResponseProcessing 
     )
 }
 
-// Default implementation of CloudServiceProvider
+/// Default implementation of CloudServiceProvider
 public extension CloudServiceProvider {
 
     var refreshAccessTokenHandler: (((Result<URLCredential, Error>) -> Void) -> Void)? {

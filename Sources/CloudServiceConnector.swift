@@ -3,12 +3,15 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import CryptoKit
 import Foundation
 import OAuthSwift
+#if canImport(AuthenticationServices)
+import AuthenticationServices
+#endif
 #if canImport(UIKit)
 import class UIKit.UIScreen
 import class UIKit.UIViewController
@@ -27,15 +30,23 @@ public protocol CloudServiceOAuth {
 public class CloudServiceConnector: CloudServiceOAuth {
 
     /// subclass must provide authorizeUrl
-    public var authorizeUrl: String { "" }
+    public var authorizeUrl: String {
+        ""
+    }
 
     /// subclass must provide accessTokenUrl
-    public var accessTokenUrl: String { "" }
+    public var accessTokenUrl: String {
+        ""
+    }
 
     /// subclass can provide more custom parameters
-    public var authorizeParameters: OAuthSwift.Parameters { [:] }
+    public var authorizeParameters: OAuthSwift.Parameters {
+        [:]
+    }
 
-    public var tokenParameters: OAuthSwift.Parameters { [:] }
+    public var tokenParameters: OAuthSwift.Parameters {
+        [:]
+    }
 
     public var scope: String = ""
 
@@ -541,11 +552,11 @@ public struct AccessTokenPayload {
 public class Drive115Connector: CloudServiceConnector {
 
     override public var authorizeUrl: String {
-        ""
+        "https://passportapi.115.com/open/authorize"
     }
 
     override public var accessTokenUrl: String {
-        ""
+        "https://passportapi.115.com/open/authCodeToToken"
     }
 
     override public func renewToken(with refreshToken: String, completion: @escaping (Result<OAuthSwift.TokenSuccess, Error>) -> Void) {
@@ -671,6 +682,87 @@ public class Drive115Connector: CloudServiceConnector {
             }
         })
     }
+
+    #if os(iOS) || targetEnvironment(macCatalyst)
+    /// Open 115 authorization page via ASWebAuthenticationSession.
+    /// Uses OAuth authorization code flow — bypasses OAuthSwift because 115 wraps
+    /// its token response in a `data` object that OAuthSwift cannot parse.
+    public func authorizeViaASWebAuthentication(
+        viewController: UIViewController
+    ) async throws -> AccessTokenPayload {
+        try await withCheckedThrowingContinuation { continuation in
+            let state = UUID().uuidString
+            var urlComponents = URLComponents(string: authorizeUrl)!
+            urlComponents.queryItems = [
+                URLQueryItem(name: "client_id", value: appId),
+                URLQueryItem(name: "redirect_uri", value: callbackUrl),
+                URLQueryItem(name: "response_type", value: "code"),
+                URLQueryItem(name: "state", value: state),
+            ]
+
+            guard let authURL = urlComponents.url else {
+                continuation.resume(throwing: CloudServiceError.serviceError(-1, "Invalid authorize URL"))
+                return
+            }
+
+            let session = ASWebAuthenticationSession(
+                url: authURL,
+                callbackURLScheme: "boxplayer-115oauth"
+            ) { [weak self] callbackURL, error in
+                guard let self else { return }
+
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+
+                guard let callbackURL,
+                      let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+                      let queryItems = components.queryItems,
+                      let code = queryItems.first(where: { $0.name == "code" })?.value
+                else {
+                    continuation.resume(throwing: CloudServiceError.serviceError(-1, "Failed to get authorization code"))
+                    return
+                }
+
+                // Exchange authorization code for access token
+                var tokenData: [String: Any] = [
+                    "client_id": self.appId,
+                    "client_secret": self.appSecret,
+                    "code": code,
+                    "redirect_uri": self.callbackUrl,
+                    "grant_type": "authorization_code",
+                ]
+
+                Just.post(self.accessTokenUrl, data: tokenData, headers: self.headers, asyncCompletionHandler: { result in
+                    DispatchQueue.main.async {
+                        if let error = result.error {
+                            continuation.resume(throwing: error)
+                        } else if let object = result.json as? [String: Any],
+                                  let dataObject = object["data"] as? [String: Any],
+                                  let accessToken = dataObject["access_token"] as? String,
+                                  let refreshToken = dataObject["refresh_token"] as? String,
+                                  let expires = dataObject["expires_in"] as? Int
+                        {
+                            let payload = AccessTokenPayload(
+                                accessToken: accessToken,
+                                refreshToken: refreshToken,
+                                expiresIn: expires
+                            )
+                            continuation.resume(returning: payload)
+                        } else {
+                            continuation.resume(throwing: CloudServiceError.responseDecodeError(result))
+                        }
+                    }
+                })
+            }
+
+            session.presentationContextProvider = viewController
+            session.prefersEphemeralWebBrowserSession = false
+            session.start()
+        }
+    }
+    #endif
 }
 
 extension Drive115Connector {
@@ -683,8 +775,7 @@ extension Drive115Connector {
     private func codeChallenge(fromVerifier verifier: String) -> String {
         let verifierData = verifier.data(using: .ascii)!
         let challengeHashed = SHA256.hash(data: verifierData)
-        let challengeBase64Encoded = Data(challengeHashed).base64EncodedString()
-        return challengeBase64Encoded
+        return Data(challengeHashed).base64EncodedString()
     }
 }
 

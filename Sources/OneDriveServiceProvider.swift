@@ -3,12 +3,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, you can obtain one at https://mozilla.org/MPL/2.0/.
 //
-// Copyright (c) 2025 Jellyfin & Jellyfin Contributors
+// Copyright (c) 2026 Jellyfin & Jellyfin Contributors
 //
 
 import Foundation
 
-/*
+/**
  A wrapper for OneDrive using OAuth2.
  Documents can be found here:
  https://docs.microsoft.com/en-us/onedrive/developer/rest-api/?view=odsp-graph-online
@@ -55,10 +55,14 @@ public class OneDriveServiceProvider: CloudServiceProvider {
     }
 
     /// The name of service provider.
-    public var name: String { "OneDrive" }
+    public var name: String {
+        "OneDrive"
+    }
 
     /// The root folder of OneDrove service. You can use this property to list root items.
-    public var rootItem: CloudItem { CloudItem(id: "root", name: name, path: "root:") }
+    public var rootItem: CloudItem {
+        CloudItem(id: "root", name: name, path: "root:")
+    }
 
     public var credential: URLCredential?
 
